@@ -4,6 +4,7 @@ import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
 import { Role } from './roles.enum';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -15,9 +16,14 @@ export class AuthController {
   //   return this.authService.loginUser(loginDto);
   // }
 
-  @Post('generate-otp')
+  @Post('send-otp')
   async generateOtp(@Body() loginDto: GenerateOtpDto): Promise<any> {
     return this.authService.sendOtp(loginDto);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<any> {
+    return this.authService.verifyOtp(verifyDto);
   }
 
   // @Roles(Role.ADMIN) 
