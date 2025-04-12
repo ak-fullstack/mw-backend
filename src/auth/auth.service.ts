@@ -8,6 +8,9 @@ import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { Role } from './roles.enum';
+// import { RedisService } from '../redis/redis.service';
+
 
 @Injectable()
 export class AuthService {
@@ -15,6 +18,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    // private readonly redisService: RedisService,
 
   ) {}
   
@@ -50,11 +54,21 @@ export class AuthService {
   }
 
   async verifyOtp(verifyDto: VerifyOtpDto): Promise<{ access_token: string,role:string }> {
-    const user = await this.validateUser(verifyDto.email, verifyDto.otp);    
-    const payload = { username: user.username, sub: user.id };
+    const user = await this.validateUser(verifyDto.email, verifyDto.otp);
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    const access_token = this.jwtService.sign(payload);
+    // await this.redisService.setToken(user.id.toString(), access_token); 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token,
       role:user.role
     };
   }
+
+
+  async getRoles(): Promise<Role[]> {
+    return Object.values(Role).filter(role => role !== Role.SUPERADMIN);  }
 }

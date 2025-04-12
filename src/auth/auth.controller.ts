@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
-import { Roles } from './roles.decorator';
-import { RolesGuard } from './roles.guard';
 import { Role } from './roles.enum';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -24,6 +24,13 @@ export class AuthController {
   @Post('verify-otp')
   async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<any> {
     return this.authService.verifyOtp(verifyDto);
+  }
+
+  @Get('roles')
+  @Roles(Role.SUPERADMIN) 
+  @UseGuards(RolesGuard)
+  getRoles(): Promise<Role[]> {
+    return this.authService.getRoles()  // Get all roles from the enum
   }
 
   // @Roles(Role.ADMIN) 

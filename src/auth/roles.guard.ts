@@ -8,37 +8,36 @@ import { PUBLIC_KEY } from './public.decorator';  // Import the Public decorator
 @Injectable()
 export class RolesGuard extends JwtAuthGuard {
   constructor(private reflector: Reflector) {
-    super();  // Call the parent class constructor (JwtAuthGuard)
+    super();
   }
 
-  // This is where we implement the canActivate method
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.get<boolean>(PUBLIC_KEY, context.getHandler());
-    if (isPublic) {
-      return true;  // If the route is public, allow access
-    }
+    if (isPublic) return true;
+
+    // ✅ Call parent guard to validate and attach user to request
+    const canProceed = await super.canActivate(context);
+    if (!canProceed) return false;
 
     const requiredRoles = this.reflector.get<Role[]>(ROLES_KEY, context.getHandler());
 
-    // If no roles are specified, return Unauthorized
     if (!requiredRoles || requiredRoles.length === 0) {
       throw new UnauthorizedException('No roles specified, access denied');
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user = request.user; // This will now be defined
+    console.log(user);
+    
 
-    // Check if user is authenticated
     if (!user) {
       throw new UnauthorizedException('User is not authenticated');
     }
 
-    // Check if the user has at least one of the required roles
-    if (requiredRoles.some(role => user.roles?.includes(role))) {
+    if (requiredRoles.includes(user.role)) {
       return true;
     }
 
-    // If the user doesn't have the required roles, throw ForbiddenException
     throw new ForbiddenException('You do not have the required role(s)');
   }
 }
