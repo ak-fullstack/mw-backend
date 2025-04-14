@@ -14,13 +14,15 @@ export class RedisService {
       host: 'localhost',  // Redis host
       port: 6379,         // Redis port (default is 6379)
     });
+
+    this.setToken('1', 'testToken'); // Example usage of setToken method
   }
 
   // Set token with expiration time (in seconds)
   async setToken(userId: string, token: string): Promise<void> {
     const ttl = this.configService.get<string>('REDIS_TOKEN_TTL');
     const ttlValue = ttl ? parseInt(ttl, 10) : 3600; 
-    await this.redisClient.setex(`session:${userId}`, ttlValue, token);
+    await this.redisClient.setex(`session:${userId}`, ttlValue, token); 
   }
 
   // Get token for a specific user

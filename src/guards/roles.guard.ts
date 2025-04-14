@@ -1,9 +1,9 @@
 import { Injectable, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from './jwt-auth.guard';  // Import your JWT Auth guard
-import { ROLES_KEY } from './roles.decorator';  // Import the roles metadata key
-import { Role } from './roles.enum';  // Import Role enum
-import { PUBLIC_KEY } from './public.decorator';  // Import the Public decorator's metadata key
+import { ROLES_KEY } from '../decorators/roles.decorator';  // Import the roles metadata key
+import { Role } from '../enum/roles.enum';  // Import Role enum
+import { PUBLIC_KEY } from '../decorators/public.decorator';  // Import the Public decorator's metadata key
 
 @Injectable()
 export class RolesGuard extends JwtAuthGuard {

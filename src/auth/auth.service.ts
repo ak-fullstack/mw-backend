@@ -8,7 +8,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { Role } from './roles.enum';
+import { Role } from '../enum/roles.enum';
 // import { RedisService } from '../redis/redis.service';
 
 

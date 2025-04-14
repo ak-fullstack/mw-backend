@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, Unique, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
-import { Role } from 'src/auth/roles.enum';
+import { Role } from 'src/enum/roles.enum';
 
 // import { UserImage } from './user-image.entity';
 

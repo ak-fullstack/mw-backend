@@ -1,0 +1,19 @@
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { RolePermission } from 'src/roles/role-permission/entities/role-permission.entity';
+
+@Entity()
+export class Role {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ unique: true })
+  roleName: string; // More specific naming to indicate it's a role name
+
+  @Column({ unique: true })
+  permissionGroup: string; 
+
+  @OneToMany(() => RolePermission, (rolePermission) => rolePermission.role, {
+    cascade: true, // Automatically update role permissions when the role is updated
+  })
+  permissions: RolePermission[]; // Relation with RolePermission table
+}
