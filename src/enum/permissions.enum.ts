@@ -1,4 +1,8 @@
-export enum Permission {
+export enum PermissionEnum  {
+    MASTER_PERMISSION= 'MASTER_PERMISSION',
+
+    CREATE_ROLE = 'CREATE_ROLE',
+
     CREATE_USER = 'CREATE_USER',
     READ_USER = 'READ_USER',
     UPDATE_USER = 'UPDATE_USER',
@@ -14,4 +18,4 @@ export enum Permission {
     }
   }
   
-  validateEnumUniqueness(Permission);
+  validateEnumUniqueness(PermissionEnum );

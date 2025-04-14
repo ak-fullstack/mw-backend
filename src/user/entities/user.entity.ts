@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index, Unique, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
 import { Role } from 'src/enum/roles.enum';
@@ -9,7 +9,7 @@ export enum UserStatus {
     ACTIVE = 'active',
     INACTIVE = 'inactive',
     PENDING = 'pending',
-    SUSPENDED = 'suspended',
+    SUSPENDED = 'suspended', 
     BLOCKED = 'blocked',
 }
 
@@ -22,7 +22,7 @@ export class User {
     @Column({ length: 50 })
     firstName: string;
 
-    @Column({ length: 50 })
+    @Column({ length: 50 }) 
     lastName: string;
 
     @Column({ length: 101, generatedType: 'STORED', asExpression: "CONCAT(firstName, ' ', lastName)" })

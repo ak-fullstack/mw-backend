@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsArray, ArrayNotEmpty, Matches, IsString, IsEnum } from 'class-validator';
-import { Permission } from 'src/enum/permissions.enum';
+import { PermissionEnum  } from 'src/enum/permissions.enum';
 
 export class CreateRoleDto {
     @IsNotEmpty()
@@ -10,6 +10,6 @@ export class CreateRoleDto {
 
     @IsArray()
     @ArrayNotEmpty()
-    @IsEnum(Permission, { each: true })
+    @IsEnum(PermissionEnum , { each: true })
     permissions: string[];
 }

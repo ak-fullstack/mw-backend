@@ -1,6 +1,7 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { PermissionsGuard } from './guards/permissions.guard';
 
 
 async function bootstrap() {
@@ -16,6 +17,9 @@ async function bootstrap() {
     transform: true, // Automatically transforms payloads into DTO instances
     skipMissingProperties: false, // Don't skip missing properties
   }));
+
+  app.useGlobalGuards(new PermissionsGuard(new Reflector()));
+
 
   await app.listen(process.env.PORT ?? 3000);
 }
