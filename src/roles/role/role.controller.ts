@@ -1,8 +1,10 @@
-import { Body, ConflictException, Controller, Get, Post } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleService } from './role.service';
 import { permission } from 'process';
 import { RequirePermissions } from 'src/decorators/permission.decorator';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('role')
 export class RoleController {
@@ -11,6 +13,7 @@ export class RoleController {
 
 
     @Post('create-role')
+    @UseGuards(JwtAuthGuard,PermissionsGuard)
     @RequirePermissions('CREATE_ROLE')
     async create(@Body() createRoleDto: CreateRoleDto) {
       try {
@@ -29,7 +32,8 @@ export class RoleController {
 
 
     @Get('get-all-roles-with-permissions')
-    @RequirePermissions('create-role')
+    @UseGuards(JwtAuthGuard,PermissionsGuard)
+    @RequirePermissions('READ_ROLE')
 async getAllRoles() {
   return await this.roleService.getAllRolesWithPermissions();
 }

@@ -1,17 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, Unique, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, BeforeInsert, BeforeUpdate } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
-import { Role } from 'src/enum/roles.enum';
-
+import { Role } from 'src/roles/role/entities/role.entity';
+import { State } from 'src/enum/states.enum';
+import { UserStatus } from 'src/enum/user-staus.enum'; 
 // import { UserImage } from './user-image.entity';
 
-export enum UserStatus {
-    ACTIVE = 'active',
-    INACTIVE = 'inactive',
-    PENDING = 'pending',
-    SUSPENDED = 'suspended', 
-    BLOCKED = 'blocked',
-}
+
 
 @Entity('users')
 @Unique(['email'])
@@ -22,36 +17,35 @@ export class User {
     @Column({ length: 50 })
     firstName: string;
 
-    @Column({ length: 50 }) 
+    @Column({ length: 50 })
     lastName: string;
 
     @Column({ length: 101, generatedType: 'STORED', asExpression: "CONCAT(firstName, ' ', lastName)" })
     fullName: string;
 
-    @Column({ unique: true, length: 100 })
+    @Column({ length: 100 })
     email: string;
 
-    @Column({ length: 20, nullable: true })
+    @Column({ length: 20 })
     phone: string;
 
-    @Column({ select: false })
-    @Exclude()
-    passwordHash: string;
+   
 
-    @Column({ type: 'boolean', default: true }) 
+    @Column({ type: 'boolean', default: true })
     isActive: boolean;
 
-    @Column({ type: 'enum', enum: Role })
+    @ManyToOne(() => Role, (role) => role.users, { eager: true })
+    @JoinColumn({ name: 'roleId' })
     role: Role;
 
-    // @OneToMany(() => UserImage, (image) => image.user, { cascade: true })
-    // images: UserImage[]; // User profile & cover images
+    @Column()
+    roleId: number;
 
     @CreateDateColumn()
-    createdAt: Date; // Auto-handles creation timestamps
+    createdAt: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date; // Auto-handles update timestamps
+    updatedAt: Date;
 
     @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
     status: UserStatus;
@@ -59,7 +53,40 @@ export class User {
     @Column({ type: 'boolean', default: false })
     isDeleted: boolean;
 
-    async comparePassword(inputPassword: string): Promise<boolean> {    
+    // Address-related fields
+    @Column({ length: 255 })
+    streetAddress: string;
+
+    @Column({ length: 100 })
+    city: string;
+
+    @Column({ type: 'enum', enum: State, default: State.TAMIL_NADU })
+    state: State;  // State now uses the enum defined above
+
+    @Column({ length: 10})
+    pincode: string;
+
+    // Profile image URL
+    @Column({ length: 255 })
+    profileImageUrl: string;
+
+    // Computed full address based on the fields above
+    @Column({ length: 512, nullable: true })
+    fullAddress: string;
+    
+    @BeforeInsert()
+    @BeforeUpdate()
+    setFullAddress() {
+      this.fullAddress = `${this.streetAddress || ''}, ${this.city || ''}, ${this.state || ''}, ${this.pincode || ''}`;
+    }
+
+
+    @Column({ select: false,nullable: true })
+    @Exclude()
+    passwordHash: string;
+
+    // Compare password method
+    async comparePassword(inputPassword: string): Promise<boolean> {
         return inputPassword === this.passwordHash;
     }
 }

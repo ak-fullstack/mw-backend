@@ -16,12 +16,19 @@ import {
         PERMISSIONS_KEY,
         [context.getHandler(), context.getClass()],
       );
+
+      console.log(requiredPermissions);
+      
       
       if (!requiredPermissions) return true;
+
+     
   
       const { user } = context.switchToHttp().getRequest();
+
+      console.log(user);
   
-      if (!user?.permissions) return false;
+      if (!user?.permissions || user.permissions.length === 0) return false;
   
       // SUPER ADMIN shortcut
       if (user.permissions.includes(PermissionEnum.MASTER_PERMISSION)) return true;

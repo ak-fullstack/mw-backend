@@ -78,9 +78,11 @@ export class RoleService {
             const roles = await this.roleRepository.find({
               relations: ['permissions'],
             });
-          
+            console.log(roles);
+            
             return roles.map((role) => ({
               roleName: role.roleName,
+              roleId:role.id,
               permissions: role.permissions.map((p) => p.permission),
             }));
           }

@@ -8,7 +8,6 @@ import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { Role } from '../enum/roles.enum';
 // import { RedisService } from '../redis/redis.service';
 
 
@@ -59,7 +58,12 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      permissions:user.role.permissions
     };
+
+    
+      console.log(payload);
+      
     const access_token = this.jwtService.sign(payload);
     // await this.redisService.setToken(user.id.toString(), access_token); 
     return {
@@ -69,6 +73,4 @@ export class AuthService {
   }
 
 
-  async getRoles(): Promise<Role[]> {
-    return Object.values(Role).filter(role => role !== Role.SUPERADMIN);  }
 }
