@@ -7,13 +7,14 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesModule } from './roles/roles.module';
 import { GoogleCloudStorageModule } from './google-cloud-storage/google-cloud-storage.module';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule],
   controllers: [AppController],
   providers: [AppService],
 })

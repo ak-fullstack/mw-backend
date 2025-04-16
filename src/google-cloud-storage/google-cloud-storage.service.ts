@@ -10,7 +10,6 @@ import { StorageService } from '../interface/storage.interface';
 export class GoogleCloudStorageService {
 
   constructor(){
-    console.log('GoogleCloudStorageService initialized');
   }
 
   

@@ -17,4 +17,11 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Get('get-all-users')
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('READ_USER')
+  async getAllUsers() {
+    return this.userService.getAllUsers();
+  }
+
 }

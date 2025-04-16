@@ -47,4 +47,35 @@ export class UserService {
       return this.userRepository.save(user); // Save it to the database
     }
 
+    async getAllUsers() {
+  const users = await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.role', 'role') // Join the role table
+    .leftJoinAndSelect('role.permissions', 'permissions') // Join the permissions table
+    .select([
+      'user.id',
+      'user.fullName',
+      'user.email',
+      'user.phone',
+      'user.fullAddress',
+      'user.profileImageUrl',
+      'user.createdAt',
+      'role.roleName',
+      'permissions.permission', // Select only the permissions
+    ])
+    .getMany();
+      
+      return users.map((user) => ({
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        role: user.role?.roleName,
+        permissions: user.role?.permissions.map((perm) => perm.permission),
+        phone: user.phone,
+        address: user.fullAddress,
+        profileImageUrl: user.profileImageUrl,
+        createdAt: user.createdAt,
+      }));
+    }
+
 }

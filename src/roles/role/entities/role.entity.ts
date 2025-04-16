@@ -14,8 +14,9 @@ export class Role {
   permissionGroup: string; 
 
   @OneToMany(() => RolePermission, (rolePermission) => rolePermission.role, {
-    cascade: true, // Automatically update role permissions when the role is updated
-  })
+    cascade: true,
+    eager: true, // 🔥 This must be set
+  })  
   permissions: RolePermission[]; // Relation with RolePermission table
 
   @OneToMany(() => User, (user) => user.role)

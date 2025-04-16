@@ -6,6 +6,8 @@ export enum PermissionEnum  {
     UPDATE_ROLE = 'UPDATE_ROLE',
     DELETE_ROLE = 'DELETE_ROLE',
 
+    READ_DASHBOARD='READ_DASHBOARD',
+
     
     READ_PERMISSION = 'READ_PERMISSION',
 

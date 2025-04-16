@@ -38,7 +38,7 @@ export class User {
     @JoinColumn({ name: 'roleId' })
     role: Role;
 
-    @Column()
+    @Column({nullable: true})
     roleId: number;
 
     @CreateDateColumn()

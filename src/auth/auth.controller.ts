@@ -13,14 +13,31 @@ export class AuthController {
   //   return this.authService.loginUser(loginDto);
   // }
 
-  @Post('send-otp')
+  @Post('send-admin-otp')
   async generateOtp(@Body() loginDto: GenerateOtpDto): Promise<any> {
     return this.authService.sendOtp(loginDto);
   }
 
-  @Post('verify-otp')
+  @Post('verify-admin-otp')
   async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<any> {
     return this.authService.verifyOtp(verifyDto);
+  }
+
+
+  @Post('verify-oauth-token')
+  async verifyToken(@Body() body: { token: string }) {
+    const { token } = body;
+    
+    if (!token) {
+      return { error: 'Token is required' };
+    }
+
+    try {
+      const response = await this.authService.verifyGoogleToken(token);
+      return response;
+    } catch (error) {
+      return { error: error.message };
+    }
   }
 
 

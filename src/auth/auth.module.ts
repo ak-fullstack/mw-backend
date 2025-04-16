@@ -7,6 +7,8 @@ import { UserModule } from 'src/user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Customer } from 'src/customer/entities/customer.entity';
 // import { RedisService } from 'src/redis/redis.service';
 // import { RedisModule } from 'src/redis/redis.module';
 
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
   exports: [AuthService, JwtStrategy, JwtAuthGuard], 
   imports:[
     // RedisModule,
+    TypeOrmModule.forFeature([Customer]),
     UserModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
