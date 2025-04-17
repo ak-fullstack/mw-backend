@@ -1,7 +1,8 @@
-import { Controller,Post, Body } from '@nestjs/common';
+import { Controller,Post, Body, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -40,6 +41,23 @@ export class AuthController {
     }
   }
 
+  @Post('send-customer-email-otp')
+  async sendOtp(@Body() generateOtpDto: GenerateOtpDto): Promise<{ message: string }> {
+    return this.authService.sendCustomerEmailOtp(generateOtpDto.email);
+  }
 
+  @Post('verify-customer-email-otp')
+async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp);
+}
+
+@Post('customer-login')
+async login(@Body() loginDto: LoginDto) : Promise<any> {
+  const customer = await this.authService.customerLogin(loginDto.email, loginDto.password);
+  return  customer;
+
+  // const token = await this.authService.generateToken(user);
+  // return { access_token: token };
+}
 
 }

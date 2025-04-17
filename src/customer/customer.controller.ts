@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body,Headers, Patch, Param, Delete } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -10,7 +10,12 @@ export class CustomerController {
 
 
   @Post('create-customer')
-  async createCustomer(@Body() createCustomerDto: CreateCustomerDto): Promise<Customer> {
-    return this.customerService.create(createCustomerDto);
+  async createCustomer(
+    @Body() createCustomerDto: CreateCustomerDto,
+    @Headers('authorization') authHeader: string
+): Promise<Customer> {
+    const token = authHeader?.replace('Bearer ', '');
+    return this.customerService.create(createCustomerDto, token);
   }
+
 }

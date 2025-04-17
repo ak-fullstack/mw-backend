@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Repository } from 'typeorm';
+import { EmailsService } from 'src/emails/emails.service';
+import { CustomerService } from 'src/customer/customer.service';
 
 
 // import { RedisService } from '../redis/redis.service';
@@ -23,6 +25,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private configService: ConfigService,
+    private emailService : EmailsService,
+    private customerService:CustomerService,
      @InjectRepository(Customer)
         private customerRepository: Repository<Customer>,
     // private readonly redisService: RedisService,
@@ -49,6 +53,8 @@ export class AuthService {
 
     throw new UnauthorizedException('Invalid credentials');
   }
+
+
 
   
   
@@ -127,8 +133,89 @@ export class AuthService {
     }
   }
 
+  async sendCustomerEmailOtp(email: string): Promise<any> {
+    const customer = await this.customerRepository.findOne({ where: { emailId:email } });
+    if (customer) {
+      // If email exists and passwordHash is null, return an error
+      if (!customer.passwordHash) {
+        throw new ConflictException('You have signed up using Google. Please log in using Google.');
+      }
+      throw new ConflictException('Account already exists. Please log in.');
+
+    }
+    
+      await this.emailService.sendOtpMail(email);
+    
+    // You can store OTP temporarily for verification purposes (in-memory, cache, or DB)
+    
+    return {
+      message: `OTP sent to ${email}`,
+    };
+  }
+
+
+  async verifyCustomerOtp(email: string, otp: string): Promise<any> {
+    
+    const storedOtp = '1111';
+  
+    if (!storedOtp) {
+      throw new BadRequestException('OTP expired or not found.');
+    }
+  
+    if (storedOtp !== otp) {
+      throw new UnauthorizedException('Invalid OTP.');
+    }
+
+  
+    const payload = {
+      email: email,
+      purpose: 'set-password',
+    };
+
+    const access_token = this.jwtService.sign(payload,{ expiresIn: '5m' });
+    return {
+      access_token,
+      email:email
+    };
+    }
+
+    
+  async validateCustomer(email: string, password: string): Promise<any> {
+    const customer = await this.customerService.findByCustomerEmail(email);
+    
+    if(!customer){
+      throw new UnauthorizedException('Account does not exist. Register for an account');
+    }
+
+    const isPasswordValid = await customer.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+      return customer
+  }
+
+    async customerLogin(email,password):Promise<any>{
+        const customer =  await this.validateCustomer(email,password);
+
+        const payload = {
+          sub: customer.id,
+          email: customer.emailId,
+          role: customer.role,
+        };
+
+        
+        const access_token = this.jwtService.sign(payload);
+        // await this.redisService.setToken(user.id.toString(), access_token); 
+        return {
+          access_token,
+          role:customer.role
+        };  
+    }
+  
+  }
 
 
 
 
-}

@@ -1,22 +1,58 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Repository } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CustomerService {
   
   constructor(
+    private readonly jwtService: JwtService,
+    private configService : ConfigService,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
   ) {}
   
-  async create(createCustomerDto: CreateCustomerDto): Promise<Customer> {
-    const customer = this.customerRepository.create(createCustomerDto);
-    return await this.customerRepository.save(customer);
+  async create(createCustomerDto: CreateCustomerDto,token): Promise<Customer> {
+
+    if(!token){
+      throw new UnauthorizedException('Unauthorized');
+    }
+    
+try{
+  const payload = this.jwtService.verify(token, {
+    secret: this.configService.get<string>('JWT_SECRET'),
+  });
+  
+
+  if (payload.purpose !== 'set-password') {
+    throw new UnauthorizedException('Invalid token');
   }
 
+  console.log(payload.email);
+  
+  const customer = this.customerRepository.create({...createCustomerDto,emailId:payload.email});
+  await customer.setPassword(createCustomerDto.password);
+  return await this.customerRepository.save(customer);
+}catch(error){  
+  if (error.name === 'TokenExpiredError') {
+    throw new UnauthorizedException('Token has expired. Please request a new one.');
+  }
+  throw new UnauthorizedException('Invalid or expired token');
+}
+  
+  }
+  
 
+  async findByCustomerEmail(email: string): Promise<any> {
+    const customer = await this.customerRepository.findOne({
+      where: { emailId: email },
+      select: ['id', 'emailId', 'passwordHash','role'] // include passwordHash explicitly
+    });    
+    return customer;
+  }
 }

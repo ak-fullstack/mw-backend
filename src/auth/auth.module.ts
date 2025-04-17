@@ -9,12 +9,14 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
+import { EmailsService } from 'src/emails/emails.service';
+import { CustomerService } from 'src/customer/customer.service';
 // import { RedisService } from 'src/redis/redis.service';
 // import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, EmailsService,CustomerService],
   exports: [AuthService, JwtStrategy, JwtAuthGuard], 
   imports:[
     // RedisModule,

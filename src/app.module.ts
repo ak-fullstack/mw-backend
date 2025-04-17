@@ -8,13 +8,14 @@ import { AuthModule } from './auth/auth.module';
 import { RolesModule } from './roles/roles.module';
 import { GoogleCloudStorageModule } from './google-cloud-storage/google-cloud-storage.module';
 import { CustomerModule } from './customer/customer.module';
+import { EmailsModule } from './emails/emails.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule],
   controllers: [AppController],
   providers: [AppService],
 })

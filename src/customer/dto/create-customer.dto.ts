@@ -4,8 +4,11 @@ import { State } from 'src/enum/states.enum';
 export class CreateCustomerDto {
 
     
-    @IsEmail({}, { message: 'Invalid email format' })
-    emailId: string;
+
+    @IsString()
+    @IsNotEmpty({ message: 'Password is required' })
+    @MinLength(6, { message: 'Password must be at least 6 characters long' })
+    password: string;
 
     @IsOptional()
     @IsString()

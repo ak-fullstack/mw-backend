@@ -1,4 +1,7 @@
+import { Exclude } from 'class-transformer';
 import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, Unique, BeforeUpdate, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
+
 
 @Entity('customers')
 // @Unique(["motoFamId"])  // Ensure motoFamId is unique
@@ -62,7 +65,24 @@ export class Customer {
     @UpdateDateColumn()
     updatedAt: Date;
 
+    @Column({ select: false, nullable: true })
+    @Exclude()
+    passwordHash: string;
 
+    async comparePassword(inputPassword: string): Promise<boolean> {
+      
+        if (!this.passwordHash) {
+          return false; 
+        }
+        
+        return await bcrypt.compare(inputPassword, this.passwordHash);
+      }
+    
+      // Method to set password (used when creating/updating the password)
+      async setPassword(plainPassword: string): Promise<void> {
+        const salt = await bcrypt.genSalt(10); // Generate salt
+        this.passwordHash = await bcrypt.hash(plainPassword, salt); // Set the hashed password
+      }
     //   // Automatically generate motoFamId before inserting
     //   @BeforeInsert()
     //   generateMotoFamId() {
