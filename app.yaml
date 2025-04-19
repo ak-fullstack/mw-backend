@@ -1,0 +1,27 @@
+runtime: nodejs22
+entrypoint: node dist/main.js
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
+    
+env_variables:
+  NODE_ENV: 'development'
+
+  # MySQL Database Config
+  DB_HOST: '34.58.39.252'
+  DB_PORT: '3306'
+  DB_USER: 'root'
+  DB_PASSWORD: '12345678'
+  DB_NAME: 'mw_local'
+
+  # JWT
+  JWT_SECRET: 'HELLO'
+  JWT_EXPIRES_IN: '10d'
+
+  # REDIS
+  REDIS_TOKEN_TTL: '3600'
+
+  # GOOGLE OAUTH
+  GOOGLE_CLIENT_ID: '509406744774-mlgslvgav2f9u73tjd9k0796c16s15j3.apps.googleusercontent.com'
+  GOOGLE_SECRET: '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'

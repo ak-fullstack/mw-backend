@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
@@ -33,6 +33,8 @@ export class AuthService {
 
   ) {
     this.oauthClient = new OAuth2Client(this.configService.get<string>('GOOGLE_CLIENT_ID'));
+    console.log('my-log'+this.configService.get<string>('GOOGLE_CLIENT_ID'));
+    
   }
   
 
@@ -133,7 +135,7 @@ export class AuthService {
     }
   }
 
-  async sendCustomerEmailOtp(email: string): Promise<any> {
+  async sendCustomerEmailOtpForRegistartion(email: string): Promise<any> {
     const customer = await this.customerRepository.findOne({ where: { emailId:email } });
     if (customer) {
       // If email exists and passwordHash is null, return an error
@@ -153,8 +155,24 @@ export class AuthService {
     };
   }
 
+  async sendOtpForPasswordReset(email: string): Promise<any> {
+    const customer = await this.customerRepository.findOne({ where: { emailId:email.toLowerCase() } });
+    if (customer) {
+      await this.emailService.sendOtpMail(email);
+      return {
+        message: `OTP sent to ${email}`,
+      };
+    }
+    throw new NotFoundException('Customer not found. Cannot send OTP for non-existing user.');
+ 
+    // You can store OTP temporarily for verification purposes (in-memory, cache, or DB)
+    
+   
+  }
 
-  async verifyCustomerOtp(email: string, otp: string): Promise<any> {
+
+
+  async verifyCustomerOtp(email: string, otp: string,purpose?:string): Promise<any> {
     
     const storedOtp = '1111';
   
@@ -169,13 +187,12 @@ export class AuthService {
   
     const payload = {
       email: email,
-      purpose: 'set-password',
+      purpose: purpose,
     };
 
     const access_token = this.jwtService.sign(payload,{ expiresIn: '5m' });
     return {
       access_token,
-      email:email
     };
     }
 

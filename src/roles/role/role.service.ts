@@ -33,7 +33,7 @@ export class RoleService {
           throw new ConflictException('A role must have at least one permission');
         }
         
-        const permissionGroup = this.normalizePermissions(permissions);
+        const permissionGroup = this.normalizePermissions(permissions); 
         const existing = await this.roleRepository.findOne({ where: { permissionGroup } });
         if (existing) {
           throw new ConflictException('Permission Group already exists for the role: '+existing.roleName);

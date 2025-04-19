@@ -19,6 +19,9 @@ export class Role {
   })  
   permissions: RolePermission[]; // Relation with RolePermission table
 
-  @OneToMany(() => User, (user) => user.role)
-    users: User[];
+  @OneToMany(() => User, (user) => user.role,{
+    cascade:true
+  })
+  users: User[];
+
 }

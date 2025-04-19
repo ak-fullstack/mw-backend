@@ -8,7 +8,11 @@ export class CreateCustomerDto {
     @IsString()
     @IsNotEmpty({ message: 'Password is required' })
     @MinLength(6, { message: 'Password must be at least 6 characters long' })
+    @Matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/, {
+        message: 'Password must contain at least one uppercase letter, one number, and one special character.'
+      })
     password: string;
+
 
     @IsOptional()
     @IsString()
@@ -46,10 +50,4 @@ export class CreateCustomerDto {
     @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
     phoneNumber: string;
 
-    // @IsString()
-    // @IsNotEmpty({ message: 'Password is required' })
-    // @MinLength(6, { message: 'Password must be at least 6 characters long' })
-    // password: string;
-
-  
 }

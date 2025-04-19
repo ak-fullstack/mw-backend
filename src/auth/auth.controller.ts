@@ -41,14 +41,14 @@ export class AuthController {
     }
   }
 
-  @Post('send-customer-email-otp')
+  @Post('register/send-customer-email-otp')
   async sendOtp(@Body() generateOtpDto: GenerateOtpDto): Promise<{ message: string }> {
-    return this.authService.sendCustomerEmailOtp(generateOtpDto.email);
+    return this.authService.sendCustomerEmailOtpForRegistartion(generateOtpDto.email);
   }
 
   @Post('verify-customer-email-otp')
 async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp);
+  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp,verifyOtpDto.purpose);
 }
 
 @Post('customer-login')
@@ -56,8 +56,12 @@ async login(@Body() loginDto: LoginDto) : Promise<any> {
   const customer = await this.authService.customerLogin(loginDto.email, loginDto.password);
   return  customer;
 
-  // const token = await this.authService.generateToken(user);
-  // return { access_token: token };
+}
+
+@Post('send-reset-otp')
+async sendResetOtp(@Body() generateOtpDto: GenerateOtpDto) {
+  const response = await this.authService.sendOtpForPasswordReset(generateOtpDto.email);
+  return response;
 }
 
 }

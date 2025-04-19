@@ -13,9 +13,18 @@ export class CustomerController {
   async createCustomer(
     @Body() createCustomerDto: CreateCustomerDto,
     @Headers('authorization') authHeader: string
-): Promise<Customer> {
+): Promise<any> {
     const token = authHeader?.replace('Bearer ', '');
     return this.customerService.create(createCustomerDto, token);
+  }
+
+  @Post('update-customer')
+  async updateCustomerPassword(
+    @Body() updateCustomerDto: UpdateCustomerDto,
+    @Headers('authorization') authHeader: string
+): Promise<any> {
+    const token = authHeader?.replace('Bearer ', '');
+    return this.customerService.updateCustomer(updateCustomerDto, token);
   }
 
 }

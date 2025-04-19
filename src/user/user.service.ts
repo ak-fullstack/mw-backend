@@ -63,6 +63,7 @@ export class UserService {
       'role.roleName',
       'permissions.permission', // Select only the permissions
     ])
+    .where('role.roleName != :superadmin', { superadmin: 'SUPER_ADMIN' })
     .getMany();
       
       return users.map((user) => ({
@@ -75,7 +76,7 @@ export class UserService {
         address: user.fullAddress,
         profileImageUrl: user.profileImageUrl,
         createdAt: user.createdAt,
-      }));
+      })); 
     }
 
 }

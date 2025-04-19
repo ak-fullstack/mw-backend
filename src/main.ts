@@ -9,7 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: ['https://mw-admin-136e3.web.app/','http://localhost:4200'], // allow Angular app
+    // origin: ['https://mw-admin-136e3.web.app/','http://localhost:4200'], // allow Angular app
+    origin:true,
     credentials: true,               // allow cookies/auth headers if needed
   });
   app.useGlobalPipes(new ValidationPipe({
@@ -21,7 +22,7 @@ async function bootstrap() {
 
   // app.useGlobalGuards(new JwtAuthGuard(new Reflector()), new PermissionsGuard(new Reflector()));
 
-
+  
 
   await app.listen(process.env.PORT ?? 3000);
 }
