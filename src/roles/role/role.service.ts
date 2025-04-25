@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Role } from './entities/role.entity';
@@ -77,13 +77,20 @@ export class RoleService {
         async getAllRolesWithPermissions(): Promise<any[]> {
             const roles = await this.roleRepository.find({
               relations: ['permissions'],
-            });
-            console.log(roles);
-            
+            });            
             return roles.map((role) => ({
               roleName: role.roleName,
               roleId:role.id,
               permissions: role.permissions.map((p) => p.permission),
             }));
+          }
+
+          async deleteRole(id: number): Promise<{ message: string }> {
+            const role = await this.roleRepository.findOneBy({ id });
+            if (!role) {
+              throw new NotFoundException('Role not found');
+            }
+            await this.roleRepository.remove(role);
+            return { message: 'Role deleted successfully' };
           }
 }

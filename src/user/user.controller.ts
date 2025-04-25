@@ -8,20 +8,32 @@ import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Post('add-new-user')
-  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('CREATE_USER')
   async createUser(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
   @Get('get-all-users')
-  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('READ_USER')
   async getAllUsers() {
     return this.userService.getAllUsers();
+  }
+
+  @Get('user-statuses')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('READ_USER')
+  getUserStatuses(): any {
+    return this.userService.getAllUserStatuses();
+  }
+
+  @Patch('update-user/:id') // Accept the ID as a path parameter
+  updateUser(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateUser(id, updateUserDto);  // Pass the ID to the service method
   }
 
 }

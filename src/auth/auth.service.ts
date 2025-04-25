@@ -33,13 +33,16 @@ export class AuthService {
 
   ) {
     this.oauthClient = new OAuth2Client(this.configService.get<string>('GOOGLE_CLIENT_ID'));
-    console.log('my-log'+this.configService.get<string>('GOOGLE_CLIENT_ID'));
     
   }
   
 
   async validateUser(email: string, otp: string): Promise<any> {
     const user = await this.userService.findByUserEmail(email);
+
+    if(user.status!=='ACTIVE'){
+      throw new UnauthorizedException('User is Blocked');
+    }
     
     // if (user && bcrypt.compareSync(password, user.passwordHash)) {
     //   const { passwordHash, ...result } = user;
@@ -70,7 +73,7 @@ export class AuthService {
     return {success:true, message:'otp sent successfully'};
   }
 
-  async verifyOtp(verifyDto: VerifyOtpDto): Promise<{ access_token: string,role:string }> {
+  async verifyOtp(verifyDto: VerifyOtpDto): Promise<{  }> {
     const user = await this.validateUser(verifyDto.email, verifyDto.otp);
     const payload = {
       sub: user.id,
@@ -83,7 +86,13 @@ export class AuthService {
     // await this.redisService.setToken(user.id.toString(), access_token); 
     return {
       access_token,
-      role:user.role
+      role:user.role,
+      name:user.name,
+      email:user.email,
+      status:user.status,
+      profileImageUrl:user.profileImageUrl,
+      phone:user.phone,
+      createdAt:user.createdAt
     };
   }
 

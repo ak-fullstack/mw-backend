@@ -3,6 +3,7 @@ export enum PermissionEnum  {
 
     CREATE_ROLE = 'CREATE_ROLE',
     READ_ROLE = 'READ_ROLE',
+    DELETE_ROLE='DELETE_ROLE',
 
     // UPDATE_ROLE = 'UPDATE_ROLE',
     // DELETE_ROLE = 'DELETE_ROLE',

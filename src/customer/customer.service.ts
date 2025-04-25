@@ -23,9 +23,6 @@ export class CustomerService {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    console.log(createCustomerDto);
-
-
     try {
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
@@ -36,7 +33,6 @@ export class CustomerService {
         throw new UnauthorizedException('Invalid token');
       }
 
-      console.log(payload);
       const customer = this.customerRepository.create({ ...createCustomerDto, emailId: payload.email.toLowerCase() });
       await customer.setPassword(createCustomerDto.password);
       await this.customerRepository.save(customer);
@@ -97,6 +93,10 @@ export class CustomerService {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
+  }
+
+  findAll(): Promise<Customer[]> {
+    return this.customerRepository.find(); // If using TypeORM
   }
 
 

@@ -16,8 +16,6 @@ import {
         PERMISSIONS_KEY,
         [context.getHandler(), context.getClass()],
       );
-
-      console.log(requiredPermissions);
       
       
       if (!requiredPermissions) return true;
@@ -25,8 +23,6 @@ import {
      
   
       const { user } = context.switchToHttp().getRequest();
-
-      console.log(user);
   
       if (!user?.permissions || user.permissions.length === 0) return false;
   
