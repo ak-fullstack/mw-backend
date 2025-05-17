@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter';
 
 
 async function bootstrap() {
@@ -19,6 +20,8 @@ async function bootstrap() {
     transform: true, // Automatically transforms payloads into DTO instances
     skipMissingProperties: false, // Don't skip missing properties
   }));
+    app.useGlobalFilters(new TypeOrmExceptionFilter());
+
 
   // app.useGlobalGuards(new JwtAuthGuard(new Reflector()), new PermissionsGuard(new Reflector()));
 

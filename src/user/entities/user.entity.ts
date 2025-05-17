@@ -26,7 +26,7 @@ export class User {
     @Column({ length: 100 })
     email: string;
 
-    @Column({ length: 20 })
+    @Column({ length: 10 })
     phone: string;
 
    

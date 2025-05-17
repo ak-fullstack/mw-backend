@@ -9,13 +9,14 @@ import { RolesModule } from './roles/roles.module';
 import { GoogleCloudStorageModule } from './google-cloud-storage/google-cloud-storage.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmailsModule } from './emails/emails.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule],
   controllers: [AppController],
   providers: [AppService],
 })

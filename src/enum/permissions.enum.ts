@@ -18,6 +18,8 @@ export enum PermissionEnum  {
     READ_CUSTOMER='READ_CUSTOMER',
     READ_ORDER ='READ_ORDER',
 
+    CREATE_PRODUCT='CREATE_PRODUCT',
+
     // UPDATE_USER = 'UPDATE_USER',
     // DELETE_USER = 'DELETE_USER',
   }
