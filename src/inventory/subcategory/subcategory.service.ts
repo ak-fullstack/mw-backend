@@ -37,15 +37,19 @@ return await this.subcategoryRepository.save(subcategory);
     return subcategories;
   }
 
-  async findOne(id: number): Promise<Subcategory> {
-    const subcategory = await this.subcategoryRepository.findOne({
-      where: { id },
-      relations: ['category'],
-    });
-    if (!subcategory) {
-      throw new NotFoundException(`Subcategory with id ${id} not found`);
-    }
-    return subcategory;
+  async findOne(id: number): Promise<any> {
+   const subcategories = await this.subcategoryRepository.find({
+    where: {
+      category: { id: id },
+    },
+    relations: ['category'],
+  });
+
+  if (!subcategories.length) {
+    throw new NotFoundException(`No subcategories found for this category`);
+  }
+
+  return subcategories;
   }
 
   async update(id: number, updateSubcategoryDto: UpdateSubcategoryDto): Promise<Subcategory> {
