@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { SizesService } from './sizes.service';
 import { CreateSizeDto } from './dto/create-size.dto';
 import { UpdateSizeDto } from './dto/update-size.dto';
+import { Size } from './entities/size.entity';
 
 @Controller('sizes')
 export class SizesController {
@@ -31,4 +32,9 @@ export class SizesController {
   remove(@Param('id') id: string) {
     return this.sizesService.remove(+id);
   }
+
+  @Get('by-type/:typeId')
+async findByType(@Param('typeId') typeId: number): Promise<Size[]> {
+  return this.sizesService.findBySizeTypeId(typeId);
+}
 }

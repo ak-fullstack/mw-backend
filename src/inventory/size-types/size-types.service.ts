@@ -1,26 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSizeTypeDto } from './dto/create-size-type.dto';
 import { UpdateSizeTypeDto } from './dto/update-size-type.dto';
+import { SizeType } from './entities/size-type.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SizeTypesService {
-  create(createSizeTypeDto: CreateSizeTypeDto) {
-    return 'This action adds a new sizeType';
+  constructor(
+    @InjectRepository(SizeType)
+    private readonly sizeTypeRepo: Repository<SizeType>,
+  ) {}
+
+  async create(createDto: CreateSizeTypeDto): Promise<SizeType> {
+    const sizeType = this.sizeTypeRepo.create(createDto);
+    return this.sizeTypeRepo.save(sizeType);
   }
 
-  findAll() {
-    return `This action returns all sizeTypes`;
+async findAll(): Promise<SizeType[]> {
+  const sizeTypes = await this.sizeTypeRepo.find({ relations: ['sizes'] });
+
+  if (sizeTypes.length === 0) {
+    throw new NotFoundException('No size types found');
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} sizeType`;
+  return sizeTypes;
+}
+
+  async findOne(id: number): Promise<SizeType> {
+    const sizeType = await this.sizeTypeRepo.findOne({
+      where: { id },
+      relations: ['sizes'],
+    });
+    if (!sizeType) throw new NotFoundException(`SizeType with ID ${id} not found`);
+    return sizeType;
   }
 
-  update(id: number, updateSizeTypeDto: UpdateSizeTypeDto) {
-    return `This action updates a #${id} sizeType`;
+  async update(id: number, updateDto: UpdateSizeTypeDto): Promise<SizeType> {
+    const sizeType = await this.findOne(id);
+    const updated = Object.assign(sizeType, updateDto);
+    return this.sizeTypeRepo.save(updated);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} sizeType`;
+  async remove(id: number): Promise<void> {
+    const result = await this.sizeTypeRepo.delete(id);
+    if (result.affected === 0) throw new NotFoundException(`SizeType with ID ${id} not found`);
   }
 }
