@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ManyToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ManyToMany, Unique } from 'typeorm';
 import { SizeType } from 'src/inventory/size-types/entities/size-type.entity';
 import { Product } from 'src/inventory/products/entities/product.entity';
 
 @Entity({ name: 'sizes' })
+@Unique(['label', 'type']) // Enforce uniqueness of label per sizeType
 export class Size {
     @PrimaryGeneratedColumn()
     id: number;

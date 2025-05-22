@@ -18,7 +18,7 @@ export class StockPurchase {
   @Column()
   supplierName: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   purchaseDate: Date;
 
   @OneToMany(() => Stock, stock => stock.purchase)

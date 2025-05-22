@@ -10,7 +10,7 @@ export class Color {
   name: string;
 
   @Column({ type: 'varchar', length: 7, unique: true })
-  hexCode?: string;  // e.g., #FF5733
+  hexCode: string;  // e.g., #FF5733
 
   @ManyToMany(() => Product, (product) => product.colors)
   products: Product[];

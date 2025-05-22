@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTabl
 import { Category } from 'src/inventory/category/entities/category.entity';
 import { Subcategory } from 'src/inventory/subcategory/entities/subcategory.entity';
 import { Color } from 'src/inventory/colors/entities/color.entity';
-import { Dimension } from 'src/inventory/dimensions/entities/dimension.entity';
 import { Size } from 'src/inventory/sizes/entities/size.entity';
 import { ProductVariant } from 'src/inventory/product-variants/entities/product-variant.entity';
 
@@ -21,10 +20,7 @@ export class Product {
   category: Category;
 
   @ManyToOne(() => Subcategory, subcategory => subcategory.products, { onDelete: 'SET NULL', nullable: true })
-  subcategory: Subcategory;
-
-  @Column({ default: false })
-  has_dimensions: boolean;
+  subCategory: Subcategory;
 
   @Column({ default: false })
   has_sizes: boolean;
@@ -43,19 +39,6 @@ export class Product {
   })
   colors: Color[];
 
-  @ManyToMany(() => Dimension, dimension => dimension.products)
-  @JoinTable({
-    name: 'product_dimensions',            // join table name
-    joinColumn: {
-      name: 'product_id',                   // column referencing Product
-      referencedColumnName: 'id'
-    },
-    inverseJoinColumn: {
-      name: 'dimension_id',                 // column referencing Dimension
-      referencedColumnName: 'id'
-    }
-  })
-  dimensions: Dimension[];
 
   @ManyToMany(() => Size, (size) => size.products)
   @JoinTable({
@@ -66,7 +49,5 @@ export class Product {
   sizes: Size[];
 
   @OneToMany(() => ProductVariant, variant => variant.product)
-variants: ProductVariant[];
-
-
+  variants: ProductVariant[];
 }

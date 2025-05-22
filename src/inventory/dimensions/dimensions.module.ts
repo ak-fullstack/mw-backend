@@ -7,7 +7,7 @@ import { Dimension } from './entities/dimension.entity';
 @Module({
   controllers: [DimensionsController],
   providers: [DimensionsService],
-  imports: [TypeOrmModule.forFeature([Dimension])],
+  imports: [TypeOrmModule.forFeature([Dimension])], 
 
 })
 export class DimensionsModule { }

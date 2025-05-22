@@ -18,6 +18,6 @@ export class Dimension {
   @Column({ type: 'varchar', length: 10, nullable: true })
   unit?: string;  // e.g., "cm", "inch"
 
-  @ManyToMany(() => Product, (product) => product.dimensions)
-  products: Product[];
+  // @ManyToMany(() => Product, (product) => product.dimensions)
+  // products: Product[];
 }

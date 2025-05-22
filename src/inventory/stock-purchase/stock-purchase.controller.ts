@@ -11,10 +11,11 @@ export class StockPurchaseController {
   create(@Body() createStockPurchaseDto: CreateStockPurchaseDto) {
     return this.stockPurchaseService.create(createStockPurchaseDto);
   }
+  
 
   @Get()
-  findAll() {
-    return this.stockPurchaseService.findAll();
+  findAllWithStocks() {
+    return this.stockPurchaseService.findAllWithStocks();
   }
 
   @Get(':id')

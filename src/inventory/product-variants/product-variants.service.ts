@@ -1,16 +1,81 @@
 import { Injectable } from '@nestjs/common';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ProductVariant } from './entities/product-variant.entity';
+import { Repository } from 'typeorm';
+import { Product } from '../products/entities/product.entity';
 
 @Injectable()
 export class ProductVariantsService {
+
+  constructor(
+    @InjectRepository(ProductVariant)
+    private readonly variantRepo: Repository<ProductVariant>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
+  ) { }
+
   create(createProductVariantDto: CreateProductVariantDto) {
     return 'This action adds a new productVariant';
   }
 
-  findAll() {
-    return `This action returns all productVariants`;
-  }
+ async findAll() {
+  const products = await this.productRepo.find({
+    relations: [
+      'variants',
+      'variants.size',
+      'variants.color',
+      'variants.images',
+    ],
+    order: {
+      id: 'ASC',
+    },
+  });
+
+  return products.map((product) => {
+    const uniqueSizes = new Map<number, any>();
+    const uniqueColors = new Map<number, any>();
+
+    const variants = product.variants.map((variant) => {
+      // Collect unique sizes
+      if (variant.size) {
+        uniqueSizes.set(variant.size.id, variant.size);
+      }
+      // Collect unique colors
+      if (variant.color) {
+        uniqueColors.set(variant.color.id, variant.color);
+      }
+
+      return {
+        variantId: variant.variantId,
+        size: variant.size ?? null,
+        color: variant.color ?? null,
+        images: variant.images,
+      };
+    });
+
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      hasSizes: product.has_sizes,
+      hasColors: product.has_colors,
+      sizes: Array.from(uniqueSizes.values()),
+      colors: Array.from(uniqueColors.values()),
+      variants,
+    };
+  });
+}
+
+async getVariantsByProduct(productId: number): Promise<ProductVariant[]> {
+  return this.variantRepo.find({
+    where: {
+      product: { id: productId },
+    },
+    relations: ['color', 'size', 'images'],
+  });
+}
 
   findOne(id: number) {
     return `This action returns a #${id} productVariant`;

@@ -103,7 +103,7 @@ constructor(
   });
 
   if (!sizes.length) {
-    throw new NotFoundException(`No sizes found for SizeType ID ${typeId}`);
+    throw new NotFoundException(`No sizes found for the selected SizeType`);
   }
 
   return sizes;

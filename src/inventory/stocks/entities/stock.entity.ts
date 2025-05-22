@@ -13,8 +13,11 @@ export class Stock {
   @Column()
   quantity: number; 
 
+  @Column({ default: 0 })
+  used: number;
+
   @Column('decimal', { precision: 10, scale: 2 })
-  price: number;
+  sp: number;
 
   @Column()
   sku: string;
@@ -35,7 +38,7 @@ export class Stock {
   igst: number;
 
   @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'discount_percent' })
-  discountPercent: number;
+  discount: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   ctc: number;  // Cost to company or cost price, nullable if not always set

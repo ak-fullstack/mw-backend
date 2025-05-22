@@ -3,9 +3,10 @@ import { ProductImage } from "src/inventory/product-images/entities/product-imag
 import { Product } from "src/inventory/products/entities/product.entity";
 import { Size } from "src/inventory/sizes/entities/size.entity";
 import { Stock } from "src/inventory/stocks/entities/stock.entity";
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity('product_variants')
+@Unique(['product', 'color', 'size'])
 export class ProductVariant {
     @PrimaryGeneratedColumn()
     id: number;
@@ -13,14 +14,14 @@ export class ProductVariant {
     @ManyToOne(() => Product, product => product.variants, { onDelete: 'CASCADE' })
     product: Product;
 
-    @ManyToOne(() => Color)
+    @ManyToOne(() => Color, { nullable: true })
     color: Color;
 
-    @ManyToOne(() => Size)
+    @ManyToOne(() => Size, { nullable: true })
     size: Size;
 
     @Column({ unique: true })
-    customId: string;
+    variantId: string;
 
     @OneToMany(() => ProductImage, image => image.variant, { cascade: true })
     images: ProductImage[];
@@ -28,3 +29,5 @@ export class ProductVariant {
     @OneToMany(() => Stock, stock => stock.productVariant)
     stocks: Stock[];
 }
+
+
