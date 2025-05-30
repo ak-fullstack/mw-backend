@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { Supplier } from './entities/supplier.entity';
@@ -13,12 +13,23 @@ export class SuppliersService {
     private supplierRepository: Repository<Supplier>,
   ) {}
 
-  async findAll(): Promise<Supplier[]> {
-    return this.supplierRepository.find();
+ async findAll(): Promise<Supplier[]> {
+  const suppliers = await this.supplierRepository.find();
+  if (!suppliers || suppliers.length === 0) {
+    throw new NotFoundException('No suppliers found');
   }
+  return suppliers;
+}
 
-  create(createSupplierDto: CreateSupplierDto) {
-    return 'This action adds a new supplier';
+  async create(dto: CreateSupplierDto) {
+    // Check if name already exists (if uniqueness is required)
+    const existing = await this.supplierRepository.findOne({ where: { name: dto.name } });
+    if (existing) {
+      throw new BadRequestException(`Supplier with name "${dto.name}" already exists.`);
+    }
+
+    const supplier = this.supplierRepository.create(dto);
+    return await this.supplierRepository.save(supplier);
   }
 
 

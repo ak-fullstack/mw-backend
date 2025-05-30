@@ -15,7 +15,7 @@ export class Supplier {
   @Column({ length: 15, nullable: true })
   phone?: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ length: 20,unique: true, nullable: true })
   gstNumber?: string;
 
   @Column({ type: 'text', nullable: true })
