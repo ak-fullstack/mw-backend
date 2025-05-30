@@ -18,16 +18,13 @@ export class CustomerService {
   ) { }
 
   async create(createCustomerDto: CreateCustomerDto, token): Promise<any> {
-
     if (!token) {
       throw new UnauthorizedException('Unauthorized');
     }
-
     try {
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
-
 
       if (payload.purpose !== 'register') {
         throw new UnauthorizedException('Invalid token');

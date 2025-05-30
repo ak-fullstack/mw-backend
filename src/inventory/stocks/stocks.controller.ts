@@ -12,6 +12,11 @@ export class StocksController {
     return this.stocksService.create(createStockDto);
   }
 
+    @Get('latest-by-product')
+  async getLatestStockPerProduct() {
+    return this.stocksService.getLatestStockPerProduct();
+  }
+
   @Get()
   findAll() {
     return this.stocksService.findAll();

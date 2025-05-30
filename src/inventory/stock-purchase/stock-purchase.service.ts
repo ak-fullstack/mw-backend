@@ -4,6 +4,7 @@ import { UpdateStockPurchaseDto } from './dto/update-stock-purchase.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StockPurchase } from './entities/stock-purchase.entity';
 import { Repository } from 'typeorm';
+import { Stock } from '../stocks/entities/stock.entity';
 
 @Injectable()
 export class StockPurchaseService {
@@ -25,6 +26,9 @@ async findAllWithStocks(): Promise<StockPurchase[]> {
     order: { purchaseDate: 'DESC' },
   });
 }
+
+
+
 
     create(createStockPurchaseDto: CreateStockPurchaseDto) {
     return 'This action adds a new stockPurchase';

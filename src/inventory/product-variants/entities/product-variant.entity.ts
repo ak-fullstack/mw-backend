@@ -21,7 +21,7 @@ export class ProductVariant {
     size: Size;
 
     @Column({ unique: true })
-    variantId: string;
+    sku: string;
 
     @OneToMany(() => ProductImage, image => image.variant, { cascade: true })
     images: ProductImage[];
@@ -29,5 +29,3 @@ export class ProductVariant {
     @OneToMany(() => Stock, stock => stock.productVariant)
     stocks: Stock[];
 }
-
-

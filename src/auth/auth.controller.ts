@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
+import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -15,8 +16,8 @@ export class AuthController {
   // }
 
   @Post('send-admin-otp')
-  async generateOtp(@Body() loginDto: GenerateOtpDto): Promise<any> {
-    return this.authService.sendOtp(loginDto);
+  async generateOtp(@Body() sendUserLoginOtpDto: SendUserLoginOtpDto): Promise<any> {
+    return this.authService.sendOtp(sendUserLoginOtpDto);
   }
 
   @Post('verify-admin-otp')

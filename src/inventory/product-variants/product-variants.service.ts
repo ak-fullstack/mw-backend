@@ -48,7 +48,8 @@ export class ProductVariantsService {
       }
 
       return {
-        variantId: variant.variantId,
+        id: variant.id,
+        sku: variant.sku,
         size: variant.size ?? null,
         color: variant.color ?? null,
         images: variant.images,
@@ -86,6 +87,6 @@ async getVariantsByProduct(productId: number): Promise<ProductVariant[]> {
   }
 
   remove(id: number) {
-    return `This action removes a #${id} productVariant`;
+    return `This action removes a #${id} productVariant`; 
   }
 }

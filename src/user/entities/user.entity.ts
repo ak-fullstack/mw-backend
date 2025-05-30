@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
 import { Role } from 'src/roles/role/entities/role.entity';
 import { State } from 'src/enum/states.enum';
-import { UserStatus } from 'src/enum/user-staus.enum'; 
+import { UserStatus } from 'src/enum/user-staus.enum';
 // import { UserImage } from './user-image.entity';
 
 
@@ -11,87 +11,96 @@ import { UserStatus } from 'src/enum/user-staus.enum';
 @Entity('users')
 @Unique(['email'])
 export class User {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ length: 50 })
-    firstName: string;
+  @Column({ length: 50 })
+  firstName: string;
 
-    @Column({ length: 50 })
-    lastName: string;
+  @Column({ length: 50 })
+  lastName: string;
 
-    @Column({ length: 101, generatedType: 'STORED', asExpression: "CONCAT(firstName, ' ', lastName)" })
-    fullName: string;
+  @Column({ length: 101, generatedType: 'STORED', asExpression: "CONCAT(firstName, ' ', lastName)" })
+  fullName: string;
 
-    @Column({ length: 100 })
-    email: string;
+  @Column({ length: 100 })
+  email: string;
 
-    @Column({ length: 10 })
-    phone: string;
+  @Column({ length: 10 })
+  phone: string;
 
-   
 
-    @Column({ type: 'boolean', default: true })
-    isActive: boolean;
 
-    @ManyToOne(() => Role, (role) => role.users, {
-      eager: true,
-      onDelete: 'SET NULL',
-      nullable: true,
-    })
-    @JoinColumn({ name: 'roleId' })
-    role: Role;
-    
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 
-    @Column({nullable: true})
-    roleId: number;
+  @ManyToOne(() => Role, (role) => role.users, {
+    eager: true,
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'roleId' })
+  role: Role;
 
-    @CreateDateColumn()
-    createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @Column({ nullable: true })
+  roleId: number;
 
-    @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
-    status: UserStatus;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @Column({ type: 'boolean', default: false })
-    isDeleted: boolean;
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-    // Address-related fields
-    @Column({ length: 255 })
-    streetAddress: string;
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+  status: UserStatus;
 
-    @Column({ length: 100 })
-    city: string;
+  @Column({ type: 'boolean', default: false })
+  isDeleted: boolean;
 
-    @Column({ type: 'enum', enum: State, default: State.TAMIL_NADU })
-    state: State;  // State now uses the enum defined above
+  // Address-related fields
+  @Column({ length: 255 })
+  streetAddress: string;
 
-    @Column({ length: 10})
-    pincode: string;
+  @Column({ length: 100 })
+  city: string;
 
-    // Profile image URL
-    @Column({ length: 255 })
-    profileImageUrl: string;
+  @Column({ type: 'enum', enum: State, default: State.TAMIL_NADU })
+  state: State;  // State now uses the enum defined above
 
-    // Computed full address based on the fields above
-    @Column({ length: 512, nullable: true })
-    fullAddress: string;
-    
-    @BeforeInsert()
-    @BeforeUpdate()
-    setFullAddress() {
-      this.fullAddress = `${this.streetAddress || ''}, ${this.city || ''}, ${this.state || ''}, ${this.pincode || ''}`;
+  @Column({ length: 10 })
+  pincode: string;
+
+  // Profile image URL
+  @Column({ length: 255 })
+  profileImageUrl: string;
+
+  // Computed full address based on the fields above
+  @Column({ length: 512, nullable: true })
+  fullAddress: string;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  setFullAddress() {
+    this.fullAddress = `${this.streetAddress || ''}, ${this.city || ''}, ${this.state || ''}, ${this.pincode || ''}`;
+  }
+
+
+  @Column({ select: false, nullable: true })
+  @Exclude()
+  passwordHash: string;
+
+  async comparePassword(inputPassword: string): Promise<boolean> {
+
+    if (!this.passwordHash) {
+      return false;
     }
 
+    return await bcrypt.compare(inputPassword, this.passwordHash);
+  }
 
-    @Column({ select: false,nullable: true })
-    @Exclude()
-    passwordHash: string;
-
-    // Compare password method
-    async comparePassword(inputPassword: string): Promise<boolean> {
-        return inputPassword === this.passwordHash;
-    }
+  async setPassword(plainPassword: string): Promise<void> {
+    const salt = await bcrypt.genSalt(10);
+    this.passwordHash = await bcrypt.hash(plainPassword, salt);
+  }
 }

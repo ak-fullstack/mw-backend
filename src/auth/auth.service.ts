@@ -10,6 +10,7 @@ import { Customer } from 'src/customer/entities/customer.entity';
 import { Repository } from 'typeorm';
 import { EmailsService } from 'src/emails/emails.service';
 import { CustomerService } from 'src/customer/customer.service';
+import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
 
 
 // import { RedisService } from '../redis/redis.service';
@@ -64,14 +65,21 @@ export class AuthService {
   
   
 
-  async sendOtp(generateOtpDto: GenerateOtpDto): Promise<any> {
-    const user = await this.userService.findByUserEmail(generateOtpDto.email);
-    if(!user){
-      throw new UnauthorizedException('User not found');
-    }
-    //send otp code here
-    return {success:true, message:'otp sent successfully'};
+async sendOtp(sendUserLoginOtpDto: SendUserLoginOtpDto): Promise<any> {
+  const user = await this.userService.findByUserEmailWithPassword(sendUserLoginOtpDto.email);
+  
+  if (!user) {
+    throw new UnauthorizedException('User not found');
   }
+
+  const isPasswordValid = await user.comparePassword(sendUserLoginOtpDto.password);
+  if (!isPasswordValid) {
+    throw new UnauthorizedException('Invalid password');
+  }
+
+  // Send OTP logic goes here
+  return { success: true, message: 'OTP sent successfully' };
+}
 
   async verifyOtp(verifyDto: VerifyOtpDto): Promise<{  }> {
     const user = await this.validateUser(verifyDto.email, verifyDto.otp);

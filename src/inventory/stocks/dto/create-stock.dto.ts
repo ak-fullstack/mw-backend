@@ -7,8 +7,10 @@ import {
   IsArray,
   ValidateNested,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { GstType } from 'src/enum/gst-types.enum';
 
 
 
@@ -18,9 +20,6 @@ export class VariantDto {
 
    @IsNumber()
   variantId: number;
-
-  @IsString()
-  sku: string;
 
   @IsNumber()
   quantity: number;
@@ -54,9 +53,9 @@ export class CreateStockDto {
   @IsNotEmpty()
   billRefNo: string;
 
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  supplierName: string;
+  supplierId: number;
 
   @IsDate()
   @Type(() => Date)
@@ -64,6 +63,9 @@ export class CreateStockDto {
 
   @IsNumber()
   totalAmount: number;
+
+  @IsEnum(GstType)
+  gstType: GstType;
 
   @IsArray()
   @ValidateNested({ each: true })

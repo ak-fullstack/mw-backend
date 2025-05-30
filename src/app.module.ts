@@ -10,13 +10,14 @@ import { GoogleCloudStorageModule } from './google-cloud-storage/google-cloud-st
 import { CustomerModule } from './customer/customer.module';
 import { EmailsModule } from './emails/emails.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -49,13 +49,13 @@ export class ProductsService {
 
       for (const variantDto of createProductDto.variants) {
         const variant = new ProductVariant();
-        variant.variantId = variantDto.variantId;
+        variant.sku = variantDto.sku;
         variant.product = savedProduct;
 
         if (createProductDto.hasColor && variantDto.color) {
           variant.color = variantDto.color;
         }
-        if (createProductDto.hasSize && variantDto.size) {
+        if (createProductDto.hasSize && variantDto.size) { 
           variant.size = variantDto.size;
         }
 

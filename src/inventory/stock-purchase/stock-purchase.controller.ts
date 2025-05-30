@@ -5,13 +5,14 @@ import { UpdateStockPurchaseDto } from './dto/update-stock-purchase.dto';
 
 @Controller('stock-purchase')
 export class StockPurchaseController {
-  constructor(private readonly stockPurchaseService: StockPurchaseService) {}
+  constructor(private readonly stockPurchaseService: StockPurchaseService) { }
 
   @Post()
   create(@Body() createStockPurchaseDto: CreateStockPurchaseDto) {
     return this.stockPurchaseService.create(createStockPurchaseDto);
   }
-  
+
+
 
   @Get()
   findAllWithStocks() {

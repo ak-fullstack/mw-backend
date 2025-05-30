@@ -33,7 +33,7 @@ export class SubCategoryDto {
 
 export class VariantDto {
   @IsString()
-  variantId: string;
+  sku: string;
 
   @IsOptional()
   @IsObject()

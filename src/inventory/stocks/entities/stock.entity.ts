@@ -19,9 +19,6 @@ export class Stock {
   @Column('decimal', { precision: 10, scale: 2 })
   sp: number;
 
-  @Column()
-  sku: string;
-
   @ManyToOne(() => StockPurchase, purchase => purchase.stocks, { onDelete: 'CASCADE' })
   purchase: StockPurchase;
 
@@ -42,4 +39,11 @@ export class Stock {
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   ctc: number;  // Cost to company or cost price, nullable if not always set
+
+  @Column({ default: 0 })
+  reserved: number;
+
+  get available(): number {
+  return this.quantity - this.used - this.reserved;
+}
 }
