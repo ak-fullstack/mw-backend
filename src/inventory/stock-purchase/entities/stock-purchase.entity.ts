@@ -16,8 +16,17 @@ export class StockPurchase {
   @CreateDateColumn()
   createdAt: Date;
 
+   @Column('decimal', { precision: 10, scale: 2 })
+  subTotal: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  totalTax: number;
+
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  invoicePdfUrl?: string;
 
  @ManyToOne(() => Supplier, supplier => supplier.stockPurchases)
   supplier: Supplier;

@@ -34,14 +34,34 @@ export class Stock {
   @Column('decimal', { precision: 5, scale: 2, default: 0 })
   igst: number;
 
+  
+
   @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'discount_percent' })
   discount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  ctc: number;  // Cost to company or cost price, nullable if not always set
+  @Column('decimal', { precision: 10, scale: 2})
+  ctc: number; 
 
   @Column({ default: 0 })
   reserved: number;
+
+    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  subTotal: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  totalAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  totalTax: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  cgstAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  sgstAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  igstAmount: number;
 
   get available(): number {
   return this.quantity - this.used - this.reserved;

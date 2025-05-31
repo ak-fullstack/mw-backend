@@ -44,6 +44,25 @@ export class VariantDto {
 
   @IsNumber()
   igst: number;
+
+    @IsNumber()
+  subTotal: number;
+
+  @IsNumber()
+  totalTax: number;
+
+  @IsNumber()
+  cgstAmount: number;
+
+  @IsNumber()
+  sgstAmount: number;
+
+  @IsNumber()
+  igstAmount: number;
+
+  @IsNumber()
+  totalAmount: number;
+
 }
 
 
@@ -62,7 +81,17 @@ export class CreateStockDto {
   purchaseDate: Date;
 
   @IsNumber()
+  subTotal: number;
+
+  @IsNumber()
+  totalTax: number;
+
+  @IsNumber()
   totalAmount: number;
+
+  @IsOptional()
+  @IsString()
+  invoicePdfUrl?: string;
 
   @IsEnum(GstType)
   gstType: GstType;

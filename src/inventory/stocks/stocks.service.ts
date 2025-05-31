@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
@@ -6,12 +6,15 @@ import { DataSource, Repository } from 'typeorm';
 import { StockPurchase } from '../stock-purchase/entities/stock-purchase.entity';
 import { Stock } from './entities/stock.entity';
 import { VariantDto } from './dto/create-stock.dto';
+import { ProductVariant } from '../product-variants/entities/product-variant.entity';
 
 @Injectable()
 export class StocksService {
 
   constructor(private readonly dataSource: DataSource, @InjectRepository(Stock)
-      private readonly stockRepository: Repository<Stock>,) {}
+      private readonly stockRepository: Repository<Stock>,
+      @InjectRepository(ProductVariant)
+    private readonly productVariantRepository:Repository<ProductVariant>) {}
 
   async create(dto: CreateStockDto) {
   return this.dataSource.transaction(async (manager) => {
@@ -21,6 +24,9 @@ export class StocksService {
       supplier: { id: dto.supplierId },  // Use supplierId here as relation
       purchaseDate: dto.purchaseDate,
       totalAmount: dto.totalAmount,
+      totalTax: dto.totalTax,
+      subTotal: dto.subTotal,
+      invoicePdfUrl: dto.invoicePdfUrl,
       gstType: dto.gstType, // if you have gstType field in StockPurchase entity
     });
 
@@ -40,6 +46,12 @@ export class StocksService {
       stock.sgst = v.sgst;
       stock.igst = v.igst;
       stock.used = 0; // default
+      stock.igstAmount = v.igstAmount;
+      stock.cgstAmount = v.cgstAmount;
+      stock.sgstAmount = v.sgstAmount;
+      stock.subTotal = v.subTotal;
+      stock.totalTax = v.totalTax;
+      stock.totalAmount = v.totalAmount;
       return stock;
     });
 
@@ -51,44 +63,72 @@ export class StocksService {
 }
 
 
+
 async getLatestStockPerProduct() {
-  const subQuery = this.stockRepository
-    .createQueryBuilder('subStock')
-    .select('subStock.productVariantId', 'productVariantId')
-    .addSelect('MAX(subPurchase.purchaseDate)', 'latestPurchaseDate')
-    .innerJoin('subStock.purchase', 'subPurchase')
-    .groupBy('subStock.productVariantId');
+  try {
+    const stocks = await this.stockRepository.find({
+      relations: ['productVariant', 'productVariant.product', 'productVariant.color', 'productVariant.size',    'productVariant.images', 'purchase'],
+      select: {
+        id: true,
+        productVariant: {
+          id: true,
+          sku: true,
+          product: {
+            id: true,
+            name: true,
+            has_colors: true,
+            has_sizes: true,
+            description: true,
+          },
+          color: {
+            id: true,
+            name: true,
+            hexCode: true,
+          },
+          size: {
+            id: true,
+            label: true,
+          },
+        },
+        purchase: {
+          id: true,
+          purchaseDate: true,
+        },
+        quantity: true,
+        used: true,
+        reserved: true,
+      },
+    });
 
-  const stocks = await this.stockRepository
-    .createQueryBuilder('stock')
-    .innerJoin('stock.purchase', 'purchase')
-    .innerJoin('stock.productVariant', 'productVariant')
-    .innerJoin('productVariant.product', 'product')
-    .leftJoin('productVariant.color', 'color')
-    .leftJoin('productVariant.size', 'size')
-    .innerJoin(
-      '(' + subQuery.getQuery() + ')',
-      'latest',
-      'latest.productVariantId = stock.productVariantId AND latest.latestPurchaseDate = purchase.purchaseDate'
-    )
-    .setParameters(subQuery.getParameters())
-    .addSelect('stock.quantity - stock.used - stock.reserved', 'available')
-    .select([
-      'stock',
-      'purchase',
-      'productVariant',
-      'product',
-      'color',
-      'size',
-    ])
-    .getRawAndEntities();
+    // Keep only the latest stock per product variant
+  const latestStocksMap = new Map<number, typeof stocks[0]>();
 
-  // Map available into entities
-  return stocks.entities.map((entity, idx) => ({
-    ...entity,
-    available: Number(stocks.raw[idx].available),
-  }));
+  for (const stock of stocks) {
+    const variantId = stock.productVariant.id;
+    const existing = latestStocksMap.get(variantId);
+
+    if (
+      !existing ||
+      new Date(stock.purchase.purchaseDate) > new Date(existing.purchase.purchaseDate)
+    ) {
+      latestStocksMap.set(variantId, stock);
+    }
+  }
+
+  // Final result: array of latest stocks
+  const latestStocks = Array.from(latestStocksMap.values());
+
+    // Optional: Add available stock calculation
+    return latestStocks.map(stock => ({
+      ...stock,
+      available: (stock.quantity ?? 0) - (stock.used ?? 0) - (stock.reserved ?? 0),
+    }));
+  } catch (error) {
+    console.error('Error fetching stocks:', error);
+    throw new InternalServerErrorException('Failed to fetch stocks');
+  }
 }
+
 
 
   findAll() {

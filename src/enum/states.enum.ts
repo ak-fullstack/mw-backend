@@ -1,3 +1,5 @@
+import { GstType } from "./gst-types.enum";
+
 export enum State {
     ANDHRA_PRADESH = "Andhra Pradesh",
     ARUNACHAL_PRADESH = "Arunachal Pradesh",
@@ -35,3 +37,41 @@ export enum State {
     LAKSHADWEEP = "Lakshadweep",
     PUDUCHERRY = "Puducherry"
 }
+
+export const StateGstTypeMap: Record<State, GstType> = {
+  [State.ANDHRA_PRADESH]: GstType.IGST,
+  [State.ARUNACHAL_PRADESH]: GstType.IGST,
+  [State.ASSAM]: GstType.IGST,
+  [State.BIHAR]: GstType.IGST,
+  [State.CHHATTISGARH]: GstType.IGST,
+  [State.GOA]: GstType.IGST,
+  [State.GUJARAT]: GstType.IGST,
+  [State.HARYANA]: GstType.IGST,
+  [State.HIMACHAL_PRADESH]: GstType.IGST,
+  [State.JHARKHAND]: GstType.IGST,
+  [State.KARNATAKA]: GstType.IGST,
+  [State.KERALA]: GstType.IGST,
+  [State.MADHYA_PRADESH]: GstType.IGST,
+  [State.MAHARASHTRA]: GstType.IGST,
+  [State.MANIPUR]: GstType.IGST,
+  [State.MEGHALAYA]: GstType.IGST,
+  [State.MIZORAM]: GstType.IGST,
+  [State.NAGALAND]: GstType.IGST,
+  [State.ODISHA]: GstType.IGST,
+  [State.PUNJAB]: GstType.IGST,
+  [State.RAJASTHAN]: GstType.IGST,
+  [State.SIKKIM]: GstType.IGST,
+  [State.TAMIL_NADU]: GstType.CGST_SGST,
+  [State.TELANGANA]: GstType.IGST,
+  [State.TRIPURA]: GstType.IGST,
+  [State.UTTARAKHAND]: GstType.IGST,
+  [State.UTTAR_PRADESH]: GstType.IGST,
+  [State.WEST_BENGAL]: GstType.IGST,
+  [State.ANDAMAN_NICOBAR]: GstType.IGST,
+  [State.CHANDIGARH]: GstType.IGST,
+  [State.DADRA_NAGAR_HAVELI]: GstType.IGST,
+  [State.DAMAN_DIU]: GstType.IGST,
+  [State.DELHI]: GstType.IGST,
+  [State.LAKSHADWEEP]: GstType.IGST,
+  [State.PUDUCHERRY]: GstType.IGST,
+};
