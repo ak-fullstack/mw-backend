@@ -1,9 +1,11 @@
-import { Controller,Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller,Post, Body, UnauthorizedException, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
+import { Response } from 'express';
+
 
 @Controller('auth')
 export class AuthController {
@@ -27,21 +29,24 @@ export class AuthController {
 
 
   @Post('verify-oauth-token')
-  async verifyToken(@Body() body: { token: string }) {
-    const { token } = body;
-    
-    if (!token) {
-      return { error: 'Token is required' };
-    }
+async verifyToken(
+  @Body() body: { token: string },
+  @Res({ passthrough: true }) res: Response
+) {
+  const { token } = body;
 
-    try {
-      const response = await this.authService.verifyGoogleToken(token);
-      return response;
-    } catch (error) {
-      return { error: error.message };
-    }
+  if (!token) {
+    return { error: 'Token is required' };
   }
 
+  try {
+    // Call your internal login method (this should set the cookie using res)
+    const response = await this.authService.verifyGoogleToken(token, res);
+    return response;
+  } catch (error) {
+    return { error: error.message };
+  }
+}
   @Post('register/send-customer-email-otp')
   async sendOtp(@Body() generateOtpDto: GenerateOtpDto): Promise<{ message: string }> {
     return this.authService.sendCustomerEmailOtpForRegistartion(generateOtpDto.email);
@@ -53,10 +58,18 @@ async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto) {
 }
 
 @Post('customer-login')
-async login(@Body() loginDto: LoginDto) : Promise<any> {
-  const customer = await this.authService.customerLogin(loginDto.email, loginDto.password);
-  return  customer;
+async login(
+  @Body() loginDto: LoginDto,
+  @Res({ passthrough: true }) res: Response
+): Promise<any> {
+  const customer = await this.authService.customerLogin(
+    loginDto.email,
+    loginDto.password,
+    res
+  );
 
+  // Only return safe data (no token here)
+  return { role: customer.role };
 }
 
 @Post('send-reset-otp')

@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { StockPurchase } from '../stock-purchase/entities/stock-purchase.entity';
 import { Stock } from './entities/stock.entity';
 import { VariantDto } from './dto/create-stock.dto';
@@ -146,4 +146,36 @@ async getLatestStockPerProduct() {
   remove(id: number) {
     return `This action removes a #${id} stock`;
   }
+
+async getStocksByIds(
+  stockRequests: { stockId: number; quantity: number }[]
+) {
+  const stockIds = stockRequests.map(item => item.stockId);
+
+  // Fetch stocks with productVariant and product relations
+  const stocks = await this.stockRepository.find({
+    where: { id: In(stockIds) },
+    relations: ['productVariant', 'productVariant.product','productVariant.size','productVariant.color','productVariant.images'],
+  });
+  // Map the stocks in the order of the requests, include quantity from request
+  return stockRequests.map(request => {
+    const stock = stocks.find(s => s.id === request.stockId);
+    if (!stock) return null; // or handle missing stocks as you prefer
+
+    return {
+      stockId: stock.id,
+      quantity: request.quantity,
+      available: stock.available,
+      sp: stock.sp,
+      mrp: stock.mrp,
+      discount: stock.discount,
+      productName: stock.productVariant.product.name,
+      description: stock.productVariant.product.description,
+      size: stock.productVariant.size ? stock.productVariant.size.label : null,
+      color: stock.productVariant.color ? stock.productVariant.color.name : null,
+      image: stock.productVariant.images.length > 0 ? stock.productVariant.images[0].imageUrl : null,
+
+    };
+  }).filter(Boolean);
+}
 }

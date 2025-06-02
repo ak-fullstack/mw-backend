@@ -40,6 +40,9 @@ export class StockPurchase {
   })
   gstType: GstType;
 
+  @Column({ default: false })
+  verified: boolean;
+
   @OneToMany(() => Stock, stock => stock.purchase)
   stocks: Stock[];
 }

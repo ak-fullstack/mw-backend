@@ -20,8 +20,8 @@ export enum PermissionEnum  {
 
     CREATE_PRODUCT='CREATE_PRODUCT',
 
-    // UPDATE_USER = 'UPDATE_USER',
-    // DELETE_USER = 'DELETE_USER',
+   UPDATE_PRODUCT_IMAGE = 'UPDATE_PRODUCT_IMAGE',
+   UPDATE_PRODUCT= 'UPDATE_PRODUCT',
   }
 
   function validateEnumUniqueness(enumObject: any) {
