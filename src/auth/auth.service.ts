@@ -251,14 +251,13 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload);
-    console.log(this.configService.get<string>('NODE_ENV') === 'production');
     
     // Set HTTP-only cookie
     res.cookie('access_token', access_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24, 
     });
 
     

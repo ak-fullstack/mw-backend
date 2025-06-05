@@ -6,7 +6,7 @@ import { Supplier } from 'src/order/suppliers/entities/supplier.entity';
 
 
 @Entity('stock_purchases')
-export class StockPurchase {
+export class  StockPurchase {
   @PrimaryGeneratedColumn()
   id: number;
 

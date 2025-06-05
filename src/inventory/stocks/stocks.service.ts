@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
@@ -97,7 +97,7 @@ async getLatestStockPerProduct() {
         quantity: true,
         used: true,
         reserved: true,
-      },
+      },where:{onSale:true}
     });
 
     // Keep only the latest stock per product variant
@@ -178,4 +178,22 @@ async getStocksByIds(
     };
   }).filter(Boolean);
 }
+
+async approve(id: number): Promise<Stock> {
+    const stock = await this.stockRepository.findOne({ where: { id } });
+    if (!stock) throw new NotFoundException('Stock not found');
+
+    stock.approved = true;
+    return this.stockRepository.save(stock);
+  }
+
+  async toggleSale(id: number): Promise<Stock> {
+    const stock = await this.stockRepository.findOne({ where: { id } });
+    if (!stock) throw new NotFoundException('Stock not found');
+    if(!stock.approved){
+      throw new InternalServerErrorException('Stock must be approved before putting it on sale');
+    }
+    stock.onSale = !stock.onSale; // Toggle the onSale status
+    return this.stockRepository.save(stock);
+  }
 }

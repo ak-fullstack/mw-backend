@@ -1,17 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { StockPurchase } from 'src/inventory/stock-purchase/entities/stock-purchase.entity'; 
+import { StockPurchase } from 'src/inventory/stock-purchase/entities/stock-purchase.entity';
 import { ProductVariant } from 'src/inventory/product-variants/entities/product-variant.entity';
 
 @Entity('stocks')
 export class Stock {
-   @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn()
   id: number;
 
   @ManyToOne(() => ProductVariant, { onDelete: 'CASCADE' })
   productVariant: ProductVariant;
 
   @Column()
-  quantity: number; 
+  quantity: number;
 
   @Column({ default: 0 })
   used: number;
@@ -34,18 +34,18 @@ export class Stock {
   @Column('decimal', { precision: 5, scale: 2, default: 0 })
   igst: number;
 
-  
+
 
   @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'discount_percent' })
   discount: number;
 
-  @Column('decimal', { precision: 10, scale: 2})
-  ctc: number; 
+  @Column('decimal', { precision: 10, scale: 2 })
+  ctc: number;
 
   @Column({ default: 0 })
   reserved: number;
 
-    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   subTotal: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
@@ -63,7 +63,14 @@ export class Stock {
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   igstAmount: number;
 
+  @Column({ default: false })
+  approved: boolean;
+
+  @Column({ default: false })
+  onSale: boolean;
+
+
   get available(): number {
-  return this.quantity - this.used - this.reserved;
-}
+    return this.quantity - this.used - this.reserved;
+  }
 }

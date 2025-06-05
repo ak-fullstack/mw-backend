@@ -25,8 +25,14 @@ export class Order {
   })
   status: OrderStatus;
 
+  @Column({ nullable: false })
+  razorpayOrderId: string;
+
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  totalAmount: number;
 
   @CreateDateColumn()
   createdAt: Date;

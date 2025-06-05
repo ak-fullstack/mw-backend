@@ -11,13 +11,14 @@ import { CustomerModule } from './customer/customer.module';
 import { EmailsModule } from './emails/emails.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OrderModule } from './order/order.module';
+import { RazorpayModule } from './razorpay/razorpay.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule, RazorpayModule],
   controllers: [AppController],
   providers: [AppService],
 })

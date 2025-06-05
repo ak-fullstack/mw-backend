@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Repository } from 'typeorm';
@@ -6,6 +6,7 @@ import { Customer } from './entities/customer.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { REQUEST } from '@nestjs/core';
 
 @Injectable()
 export class CustomerService {
@@ -94,6 +95,18 @@ export class CustomerService {
 
   findAll(): Promise<Customer[]> {
     return this.customerRepository.find(); // If using TypeORM
+  }
+
+  getProfile(userId:number): Promise<any> {
+    
+    return this.findCustomerById(userId);
+  }
+
+   async findCustomerById(id: number): Promise<Customer | null> {
+    if (!id) {
+      return null; // or throw error
+    }
+    return await this.customerRepository.findOne({ where: { id } });
   }
 
 

@@ -1,8 +1,13 @@
-import { Controller, Get, Post, Body, Headers, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, Request, UseGuards } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { State } from 'src/enum/states.enum';  // Assuming you have an enum for states
+import { Roles } from 'src/decorators/roles.decorator';
+
 
 @Controller('customer')
 export class CustomerController {
@@ -31,5 +36,14 @@ export class CustomerController {
   async getAllCustomers(): Promise<Customer[]> {
     return this.customerService.findAll();
   }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  getProfile(@Request() req) {
+    const userId = req.user.userId;
+    return this.customerService.getProfile(userId);
+  }
+
+  
 
 }
