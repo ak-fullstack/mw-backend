@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { UpdateStockDto } from './dto/update-stock.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
@@ -180,12 +180,21 @@ async getStocksByIds(
 }
 
 async approve(id: number): Promise<Stock> {
-    const stock = await this.stockRepository.findOne({ where: { id } });
-    if (!stock) throw new NotFoundException('Stock not found');
+  const stock = await this.stockRepository.findOne({
+    where: { id },
+    relations: ['productVariant', 'productVariant.images'],
+  });
 
-    stock.approved = true;
-    return this.stockRepository.save(stock);
+  if (!stock) throw new NotFoundException('Stock not found');
+
+  const images = stock.productVariant?.images ?? [];
+  if (images.length === 0) {
+    throw new BadRequestException('Cannot approve stock. Variant has no images.');
   }
+
+  stock.approved = true;
+  return this.stockRepository.save(stock);
+}
 
   async toggleSale(id: number): Promise<Stock> {
     const stock = await this.stockRepository.findOne({ where: { id } });

@@ -78,4 +78,18 @@ async sendResetOtp(@Body() generateOtpDto: GenerateOtpDto) {
   return response;
 }
 
+@Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    // Clear HttpOnly cookie named 'token'
+    res.cookie('access_token', '', {
+      httpOnly: true,
+      secure: true, // use secure in prod
+      expires: new Date(0), // Expire immediately
+      sameSite: 'none',
+      path: '/',
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
 }

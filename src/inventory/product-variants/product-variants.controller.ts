@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProductVariantsService } from './product-variants.service';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('product-variants')
 export class ProductVariantsController {
-  constructor(private readonly productVariantsService: ProductVariantsService) {}
+  constructor(private readonly productVariantsService: ProductVariantsService) { }
 
   @Get()
   async findAll() {
@@ -16,6 +17,33 @@ export class ProductVariantsController {
   create(@Body() createProductVariantDto: CreateProductVariantDto) {
     return this.productVariantsService.create(createProductVariantDto);
   }
+
+  @Post('upload-product-image-with-id')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024, // Max file size: 5 MB
+      },
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('id') id: string,
+  ) {
+    return this.productVariantsService.uploadFile(file,id)
+    // const fileUrl = await this.googleCloudStorageService.upload(file, 'user-profiles');
+
+    // if (id) {
+    //   await this.yourService.attachImageToEntity(Number(id), fileUrl);
+    // }
+    console.log(id);
+    
+
+    const fileUrl='sdfsdf'
+
+    return { url: fileUrl };
+  }
+
 
 
   @Get(':id')
