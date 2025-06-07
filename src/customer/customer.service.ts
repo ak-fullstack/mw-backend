@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { REQUEST } from '@nestjs/core';
+import { StateGstTypeMap } from 'src/enum/states.enum';
 
 @Injectable()
 export class CustomerService {
@@ -97,12 +98,21 @@ export class CustomerService {
     return this.customerRepository.find(); // If using TypeORM
   }
 
-  getProfile(userId:number): Promise<any> {
-    
-    return this.findCustomerById(userId);
+  async getProfile(userId: number): Promise<any> {
+    const customer = await this.findCustomerById(userId);
+    if (customer) {
+      const enrichedAddresses = customer.addresses.map((address) => ({
+        ...address,
+        gstType: StateGstTypeMap[address.state],
+      }));
+       return {
+    ...customer,
+    addresses: enrichedAddresses,
+  };
+    }
   }
 
-   async findCustomerById(id: number): Promise<Customer | null> {
+  async findCustomerById(id: number): Promise<Customer | null> {
     if (!id) {
       return null; // or throw error
     }

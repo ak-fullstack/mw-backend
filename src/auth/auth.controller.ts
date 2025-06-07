@@ -53,8 +53,8 @@ async verifyToken(
   }
 
   @Post('verify-customer-email-otp')
-async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp,verifyOtpDto.purpose);
+async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto,@Res({ passthrough: true }) res: Response) {
+  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp,res,verifyOtpDto.purpose);
 }
 
 @Post('customer-login')

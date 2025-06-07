@@ -11,19 +11,19 @@ import { State } from 'src/enum/states.enum';
 export class CustomerAddressController {
   constructor(private readonly customerAddressService: CustomerAddressService) { }
 
-   @Get('get-all-states')
+  @Get('get-all-states')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('FAM_MEMBER')
   getAllStates(): string[] {
-        return Object.values(State);
+    return Object.values(State);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('FAM_MEMBER')
   async addAddress(@Req() req, @Body() dto: CreateCustomerAddressDto) {
     const customerId = req.user.userId; // assuming JWT has `sub` as customerId
-    
+
     if (!customerId) {
       throw new BadRequestException('Invalid token: no customer ID found');
     }
@@ -41,9 +41,15 @@ export class CustomerAddressController {
     return this.customerAddressService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCustomerAddressDto: UpdateCustomerAddressDto) {
-    return this.customerAddressService.update(+id, updateCustomerAddressDto);
+  @Patch()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('FAM_MEMBER')
+  async updateAddress(
+    @Body() updateDto: UpdateCustomerAddressDto,
+    @Req() req: any,
+  ) {
+    const customerId = req.user.userId;
+    return await this.customerAddressService.updateAddressIfOwned(customerId, updateDto);
   }
 
   @Delete(':id')
@@ -51,5 +57,5 @@ export class CustomerAddressController {
     return this.customerAddressService.remove(+id);
   }
 
-  
+
 }

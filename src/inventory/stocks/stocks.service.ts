@@ -164,6 +164,9 @@ async getStocksByIds(
 
     return {
       stockId: stock.id,
+      cgst:stock.cgst,
+      sgst: stock.sgst,
+      igst: stock.igst,
       quantity: request.quantity,
       available: stock.available,
       sp: stock.sp,

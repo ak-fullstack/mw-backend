@@ -192,7 +192,7 @@ export class AuthService {
 
 
 
-  async verifyCustomerOtp(email: string, otp: string, purpose?: string): Promise<any> {
+  async verifyCustomerOtp(email: string, otp: string,res: Response, purpose?: string): Promise<any> {
 
     const storedOtp = '1111';
 
@@ -211,9 +211,14 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload, { expiresIn: '5m' });
-    return {
-      access_token,
-    };
+     res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 1000 * 60 * 5,
+      path: '/',
+    });
+    return {message: 'OTP verified successfully'};
   }
 
 
