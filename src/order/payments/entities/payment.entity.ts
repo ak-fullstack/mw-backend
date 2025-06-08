@@ -7,20 +7,14 @@ export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  razorpayOrderId: string;
-
-  @Column()
+  @Column({ unique: true })
   razorpayPaymentId: string;
 
   @Column({ type: 'decimal' })
   amount: number;
 
-  @Column({ default: false })
-  paid: boolean;
-
-  @Column({ nullable: true })
-  razorpaySignature: string;
+  @Column({ type: 'varchar', length: 50, default: 'created' })
+  status: string;
 
   @ManyToOne(() => Order, order => order.payments)
   order: Order;

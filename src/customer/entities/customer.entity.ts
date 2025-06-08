@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, Unique, BeforeUpd
 import * as bcrypt from 'bcryptjs';
 import { State } from 'src/enum/states.enum';
 import { CustomerAddress } from '../customer-address/entities/customer-address.entity';
+import { Order } from 'src/order/orders/entities/order.entity';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
@@ -79,6 +80,9 @@ export class Customer {
   @Column({ select: false, nullable: true })
   @Exclude()
   passwordHash: string;
+
+  @OneToMany(() => Order, order => order.customer)
+  orders: Order[];
 
   async comparePassword(inputPassword: string): Promise<boolean> {
 

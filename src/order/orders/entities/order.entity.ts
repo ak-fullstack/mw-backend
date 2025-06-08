@@ -1,6 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderItem } from 'src/order/order-items/entities/order-item.entity';
 import { Payment } from 'src/order/payments/entities/payment.entity';
+import { State } from 'src/enum/states.enum';
+import { Customer } from 'src/customer/entities/customer.entity';
+import { PaymentStatus } from 'src/enum/payment-status.enum';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -15,8 +18,12 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ManyToOne(() => Customer, customer => customer.orders, { nullable: false })
+  @JoinColumn({ name: 'customerId' })
+  customer: Customer;
+
   @Column()
-  customerName: string; // or customerId if users are stored
+  customerId: number; // FK column to customer table
 
   @Column({
     type: 'enum',
@@ -25,14 +32,79 @@ export class Order {
   })
   status: OrderStatus;
 
-  @Column({ nullable: false })
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING
+  })
+  paymentStatus: PaymentStatus;
+
+  @Column({ nullable: false,unique:true })
   razorpayOrderId: string;
 
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  totalDiscount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
   totalAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  subTotal: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  totalTax: number;
+
+   @Column({ type: 'varchar', length: 50, nullable: true })
+  billingName: string;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  billingPhoneNumber: string;
+
+  @Column({ type: 'varchar', length: 100 })
+  billingEmailId: string;
+
+
+  @Column({ type: 'text', nullable: true })
+  billingStreetAddress: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  billingCity: string;
+
+  @Column({ type: 'enum', enum: State, nullable: true })
+  billingState: State;
+
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  billingPincode: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true,default:'India' })
+  billingCountry: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  shippingName: string;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  shippingPhoneNumber: string;
+
+  @Column({ type: 'varchar', length: 100 })
+  shippingEmailId: string;
+
+  @Column({ type: 'text', nullable: true })
+  shippingStreetAddress: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  shippingCity: string;
+
+  @Column({ type: 'enum', enum: State, nullable: true })
+  shippingState: State;
+
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  shippingPincode: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true,default:'India' })
+  shippingCountry: string;
 
   @CreateDateColumn()
   createdAt: Date;

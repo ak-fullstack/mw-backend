@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Order } from 'src/order/orders/entities/order.entity'; 
 import { Stock } from 'src/inventory/stocks/entities/stock.entity';
 import { ProductVariant } from 'src/inventory/product-variants/entities/product-variant.entity';
+import { GstType } from 'src/enum/gst-types.enum';
 
 @Entity('order_items')
 export class OrderItem {
@@ -47,6 +48,27 @@ export class OrderItem {
   @Column({ type: 'text', nullable: true })
   returnReason: string;
 
+   @Column({
+    type: 'enum',
+    enum: GstType,
+    nullable: false,
+  })
+  gstType: GstType;
+
   @Column({ nullable: true })
   refundedAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  subTotal: number;
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  cgstAmount: number;
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  sgstAmount: number;
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  igstAmount: number;
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  taxAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  totalAmount: number;
 }

@@ -1,10 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
-import { CreateRazorpayDto } from './dto/create-razorpay.dto';
-import { UpdateRazorpayDto } from './dto/update-razorpay.dto';
 
 @Controller('razorpay')
 export class RazorpayController {
-  constructor(private readonly razorpayService: RazorpayService) {}
 
+      constructor(private readonly razorpayService: RazorpayService) {}
+    
+
+@Post('webhook')
+@HttpCode(HttpStatus.OK)
+async handleWebhook(@Req() req: Request) {
+  await this.razorpayService.processWebhook(req.body, req.headers['x-razorpay-signature']);
+  return 'Webhook processed successfully';
+}
 }

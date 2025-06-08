@@ -1,61 +1,185 @@
-import { Injectable } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { RazorpayService } from 'src/razorpay/razorpay.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from './entities/order.entity';
-import { Repository } from 'typeorm';
+import { Order, OrderStatus } from './entities/order.entity';
+import { DataSource, Repository } from 'typeorm';
+import { Stock } from 'src/inventory/stocks/entities/stock.entity';
+import { Customer } from 'src/customer/entities/customer.entity';
+import { CustomerAddress } from 'src/customer/customer-address/entities/customer-address.entity';
+import { State, StateGstTypeMap } from 'src/enum/states.enum';
+import { OrderItem } from '../order-items/entities/order-item.entity';
+import { GstType } from 'src/enum/gst-types.enum';
 
 @Injectable()
 export class OrdersService {
 
-    constructor(
+  constructor(
     private readonly razorpayService: RazorpayService,
-    @InjectRepository(Order)
-    private readonly orderRepository: Repository<Order>,
-  ) {}
-  
- async create(createOrderDto: CreateOrderDto) {
+    @InjectRepository(Customer)
+    private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(CustomerAddress)
+    private readonly customerAddressRepository: Repository<CustomerAddress>,
+    private dataSource: DataSource
+  ) { }
 
-  
-    // // 1. Save order to DB
-    // const newOrder = this.orderRepository.create({
-    //   ...createOrderDto,
-    //   // status: 'PENDING',
-    // });
-    // await this.orderRepository.save(newOrder);
+  async create(createOrderDto: CreateOrderDto, customerId: number): Promise<any> {
+    
+    const customer = await this.customerRepository.findOne({ where: { id: customerId } });
 
-    // // 2. Create Razorpay order
-    // const razorpayOrder = await this.razorpayService.createOrder(newOrder.totalAmount);
+    
+    if (!customer) {
+      
+      throw new UnauthorizedException('Customer not found');
+    }
 
-    // // 3. Attach Razorpay order ID to DB
-    // newOrder.razorpayOrderId = razorpayOrder.id;
-    // await this.orderRepository.save(newOrder);
+    if (!customer.phoneNumber) {
+      customer.phoneNumber = createOrderDto.shippingPhoneNumber;
+      await this.customerRepository.save(customer);
+    }
 
-    // // 4. Return response for frontend
-    // return {
-    //   razorpayOrderId: razorpayOrder.id,
-    //   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
-    //   amount: razorpayOrder.amount,
-    //   currency: razorpayOrder.currency,
-    // };
+    const shippingAddress = await this.customerAddressRepository.findOne({
+      where: { id: createOrderDto.shippingAddressId, customerId }
+    });
+    if (!shippingAddress) {
+      throw new BadRequestException('Shipping address does not belong to the customer');
+    }
+
+    const billingAddress = await this.customerAddressRepository.findOne({
+      where: { id: createOrderDto.billingAddressId, customerId }
+    });
+    if (!billingAddress) {
+      throw new BadRequestException('Billing address does not belong to the customer');
+    }
+
+    if (createOrderDto.billingSameAsShipping) {
+      if (createOrderDto.billingAddressId !== createOrderDto.shippingAddressId) {
+        throw new BadRequestException('Billing and shipping address IDs must be same when billingSameAsShipping is true');
+      }
+    } else {
+      if (createOrderDto.billingAddressId === createOrderDto.shippingAddressId) {
+        throw new BadRequestException('Billing and shipping address IDs must be different when billingSameAsShipping is false');
+      }
+    }
+
+    const order = new Order();
+    order.customerId = customerId;
+    order.billingName = customer.fullName;
+    order.billingPhoneNumber = customer.phoneNumber;
+    order.billingEmailId = customer.emailId;
+    order.billingStreetAddress = billingAddress.streetAddress;
+    order.billingCity = billingAddress.city;
+    order.billingState = billingAddress.state;
+    order.billingPincode = billingAddress.pincode;
+    order.billingCountry = billingAddress.country || 'India';
+    order.shippingName = createOrderDto.shippingName;
+    order.shippingPhoneNumber = createOrderDto.shippingPhoneNumber;
+    order.shippingEmailId = createOrderDto.shippingEmailId;
+    order.shippingStreetAddress = shippingAddress.streetAddress;
+    order.shippingCity = shippingAddress.city;
+    order.shippingState = shippingAddress.state;
+    order.shippingPincode = shippingAddress.pincode;
+    order.shippingCountry = shippingAddress.country || 'India';
+
+    const calculationResult = await this.calculateOrder(createOrderDto.items, shippingAddress.state);
+    const { subTotal, totalAmount, totalTax, totalDiscount, orderItems } = calculationResult;
+    order.subTotal = subTotal;
+    order.totalTax = totalTax;
+    order.totalAmount = totalAmount;
+    order.totalDiscount=totalDiscount
+    order.status = OrderStatus.PENDING;
+    order.items = orderItems;
+
+    const razorPayOrderDetails=await this.razorpayService.createOrder(order.totalAmount);
+    
+    console.log(razorPayOrderDetails);
+    
+    order.razorpayOrderId=razorPayOrderDetails.id;
+
+     await this.dataSource.transaction(async manager => {
+    const savedOrder = await manager.save(Order, order);
+    for (const item of orderItems) {
+      item.order = savedOrder;
+      await manager.save(OrderItem, item);
+    }
+  });
+
+return { razorpayOrderId: razorPayOrderDetails.id,name:order.billingName,email:order.billingEmailId,contact:order.billingPhoneNumber }
   }
 
+  private async calculateOrder(
+  items: OrderItemDto[],
+  shippingState: State
+): Promise<{ orderItems: OrderItem[]; subTotal: number; totalTax: number; totalAmount: number; totalDiscount: number }> {
+  return await this.dataSource.transaction(async (manager) => {
+    const orderItems: OrderItem[] = [];
+    let subTotal = 0;
+    let totalTax = 0;
+    let totalAmount = 0;
+    let totalDiscount = 0;
+
+    const gstType = StateGstTypeMap[shippingState];
+
+    for (const item of items) {
+      const stock = await manager.findOne(Stock, {
+        where: { id: item.stockId },
+        relations: ['productVariant'],
+      });
+
+      if (!stock) {
+        throw new NotFoundException(`Stock with ID ${item.stockId} not found`);
+      }
+
+      if (!stock.approved || !stock.onSale) {
+        throw new BadRequestException(`Stock ID ${item.stockId} is not available for sale`);
+      }
+
+      if (stock.available < item.quantity) {
+        throw new BadRequestException(`Insufficient stock for stock ID ${item.stockId}`);
+      }
+
+      // Reserve stock within transaction
+      stock.reserved += item.quantity;
+      await manager.save(stock);
+
+      const orderItem = new OrderItem();
+      orderItem.stock = stock;
+      orderItem.productVariant = stock.productVariant;
+      orderItem.quantity = item.quantity;
+      orderItem.sp = stock.sp;
+      orderItem.mrp = stock.mrp;
+      orderItem.cgst = stock.cgst;
+      orderItem.sgst = stock.sgst;
+      orderItem.igst = stock.igst;
+      orderItem.discount = stock.discount;
+      orderItem.ctc = stock.ctc;
+      orderItem.gstType = gstType;
+      orderItem.subTotal = stock.sp * item.quantity;
+      orderItem.cgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.cgst) / 100 : 0;
+      orderItem.sgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.sgst) / 100 : 0;
+      orderItem.igstAmount = gstType === GstType.IGST ? (orderItem.subTotal * stock.igst) / 100 : 0;
+      orderItem.taxAmount = orderItem.cgstAmount + orderItem.sgstAmount + orderItem.igstAmount;
+      orderItem.totalAmount = orderItem.subTotal + orderItem.taxAmount;
+      orderItem.discount = 0;
+
+      subTotal += orderItem.subTotal;
+      totalTax += orderItem.taxAmount;
+      totalAmount += orderItem.totalAmount;
+      totalDiscount = 0;
+
+      orderItems.push(orderItem);
+    }
+
+    return {
+      orderItems,
+      subTotal,
+      totalTax,
+      totalAmount,
+      totalDiscount,
+    };
+  });
+}
 
 
-  findAll() {
-    return `This action returns all orders`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
-  }
-
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} order`;
-  }
 }

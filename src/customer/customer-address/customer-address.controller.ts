@@ -22,7 +22,7 @@ export class CustomerAddressController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('FAM_MEMBER')
   async addAddress(@Req() req, @Body() dto: CreateCustomerAddressDto) {
-    const customerId = req.user.userId; // assuming JWT has `sub` as customerId
+    const customerId = req.user.userId; 
 
     if (!customerId) {
       throw new BadRequestException('Invalid token: no customer ID found');
