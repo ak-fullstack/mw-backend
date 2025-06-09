@@ -5,6 +5,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/decorators/roles.decorator';
+import { Order } from './entities/order.entity';
 
 @Controller('orders')
 export class OrdersController {
@@ -19,4 +20,15 @@ export class OrdersController {
     
     return await this.ordersService.create(createOrderDto,req.user.userId);
   }
+
+   @Get()
+  getAllOrders(): Promise<any[]> {
+    return this.ordersService.findAll();
+  }
+
+    @Get(':id')
+  async findOne(@Param('id') id: number): Promise<any > {
+    return await this.ordersService.findById(id);
+  }
+
 }

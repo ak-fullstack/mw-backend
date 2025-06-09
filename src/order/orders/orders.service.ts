@@ -17,8 +17,13 @@ export class OrdersService {
 
   constructor(
     private readonly razorpayService: RazorpayService,
+
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+
     @InjectRepository(CustomerAddress)
     private readonly customerAddressRepository: Repository<CustomerAddress>,
     private dataSource: DataSource
@@ -181,5 +186,32 @@ return { razorpayOrderId: razorPayOrderDetails.id,name:order.billingName,email:o
   });
 }
 
+async findAll(): Promise<any[]> {
+    const orders = await this.orderRepository.find();
+     return orders.map(order => ({
+    ...order,
+    fullBillingAddress: order.fullBillingAddress,
+    fullShippingAddress: order.fullShippingAddress
+  }));
+  }
 
+   async findById(id: number): Promise<Order> {
+  const order = await this.orderRepository.findOne({
+    where: { id },
+    relations: [
+      'items',
+      'items.productVariant',
+      'items.productVariant.size',
+      'items.productVariant.color',
+      'items.productVariant.images',
+      'items.productVariant.product',
+    ],
+  });
+
+  if (!order) {
+    throw new NotFoundException(`Order with ID ${id} not found`);
+  }
+
+  return order;
+}
 }

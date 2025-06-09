@@ -11,6 +11,8 @@ export class RazorpayController {
 @HttpCode(HttpStatus.OK)
 async handleWebhook(@Req() req: Request) {
   await this.razorpayService.processWebhook(req.body, req.headers['x-razorpay-signature']);
+  console.log('Webhook processed successfully');
+  
   return 'Webhook processed successfully';
 }
 }

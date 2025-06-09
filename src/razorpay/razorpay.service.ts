@@ -18,7 +18,7 @@ export class RazorpayService {
       key_id: this.configService.get<string>('RAZORPAY_KEY_ID'),
       key_secret: this.configService.get<string>('RAZORPAY_KEY_SECRET'),
     });
-    this.webhookSecret = this.configService.get<string>('RAZORPAY_WEH_HOOK_SECRET') || '';
+    this.webhookSecret = this.configService.get<string>('RAZORPAY_WEB_HOOK_SECRET') || '';
 
 
   }
@@ -45,12 +45,17 @@ export class RazorpayService {
     if (!signature || Array.isArray(signature)) {
       throw new BadRequestException('Invalid or missing signature header');
     }
-
+    console.log('hook secret : '+this.configService.get<string>('RAZORPAY_WEB_HOOK_SECRET'));
+    
     const expectedSignature = crypto
       .createHmac('sha256', this.webhookSecret)
       .update(payload)
       .digest('hex');
-      console.log(expectedSignature);
+
+      console.log('expected'+expectedSignature);
+      console.log('incoming'+signature);
+      
+      
       
     if (expectedSignature !== signature) {
       throw new BadRequestException('Invalid webhook signature');

@@ -20,7 +20,7 @@ export class UserService {
 
   async setPassword(plainPassword: string): Promise<void> {
     const salt = await bcrypt.genSalt(10);
-    // console.log(await bcrypt.hash(plainPassword, salt));
+    console.log(await bcrypt.hash(plainPassword, salt));
 
   }
 

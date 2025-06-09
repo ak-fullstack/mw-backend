@@ -114,4 +114,28 @@ export class Order {
 
   @OneToMany(() => Payment, payment => payment.order, { cascade: true })
   payments: Payment[];
+
+  get fullBillingAddress(): string {
+  const parts = [
+    this.billingName,
+    this.billingStreetAddress,
+    this.billingCity,
+    this.billingState,
+    this.billingPincode,
+    this.billingCountry
+  ].filter(Boolean);
+  return parts.join(', ');
+}
+
+get fullShippingAddress(): string {
+  const parts = [
+    this.shippingName,
+    this.shippingStreetAddress,
+    this.shippingCity,
+    this.shippingState,
+    this.shippingPincode,
+    this.shippingCountry
+  ].filter(Boolean);
+  return parts.join(', ');
+}
 }
