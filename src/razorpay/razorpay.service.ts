@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PaymentsService } from 'src/order/payments/payments.service';
@@ -8,11 +8,11 @@ const Razorpay = require('razorpay');
 export class RazorpayService {
 
   private razorpay: any;
-  private readonly webhookSecret:string;
+  private readonly webhookSecret: string;
 
 
   constructor(private configService: ConfigService,
-    private paymentsService:PaymentsService
+    private paymentsService: PaymentsService
   ) {
     this.razorpay = new Razorpay({
       key_id: this.configService.get<string>('RAZORPAY_KEY_ID'),
@@ -36,31 +36,56 @@ export class RazorpayService {
 
   async processWebhook(payload: any, signature: string | string[] | undefined): Promise<void> {
     this.verifyWebhookSignature(JSON.stringify(payload), signature);
-     await this.paymentsService.updatePaymentStatus(payload);
+    await this.paymentsService.updatePaymentStatusViaWebhook(payload);
     return;
   }
 
 
-   private verifyWebhookSignature(payload: string, signature: string | string[] | undefined): void {
+  private verifyWebhookSignature(payload: string, signature: string | string[] | undefined): void {
     if (!signature || Array.isArray(signature)) {
       throw new BadRequestException('Invalid or missing signature header');
     }
-    console.log('hook secret : '+this.configService.get<string>('RAZORPAY_WEB_HOOK_SECRET'));
-    
+    console.log('hook secret : ' + this.configService.get<string>('RAZORPAY_WEB_HOOK_SECRET'));
+
     const expectedSignature = crypto
       .createHmac('sha256', this.webhookSecret)
       .update(payload)
       .digest('hex');
 
-      console.log('expected'+expectedSignature);
-      console.log('incoming'+signature);
-      
-      
-      
+    console.log('expected' + expectedSignature);
+    console.log('incoming' + signature);
+
+
+
     if (expectedSignature !== signature) {
       throw new BadRequestException('Invalid webhook signature');
     }
     return
+  }
+
+  async getRazorpayPayments(orderId: string) {
+    const payments = await this.razorpay.orders.fetchPayments(orderId);
+    if (!payments) {
+      throw new NotFoundException('No payments found for this order')
+    }
+    return payments;
+  }
+
+  async confirmPayment(orderId: string) {
+    const payments = await this.getRazorpayPayments(orderId);
+    console.log(payments);
+    
+    
+    const successfulPayment = payments.items.find(
+      (payment) => payment.status === 'captured'
+    );
+
+    if (successfulPayment) {
+      await this.paymentsService.updateSuccessfulpaymentManually(successfulPayment);
+      return;
+    }
+    throw new BadRequestException('Order is not paid yet.');
+
   }
 
 }

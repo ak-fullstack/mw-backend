@@ -1,4 +1,4 @@
-import { Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 
 @Controller('razorpay')
@@ -15,4 +15,10 @@ async handleWebhook(@Req() req: Request) {
   
   return 'Webhook processed successfully';
 }
+
+ @Get(':razorpayOrderId')
+  async updatePaymentManually(@Param('razorpayOrderId') razorpayOrderId: string) {
+     await this.razorpayService.confirmPayment(razorpayOrderId);
+     return {message:'Payment Updated'}
+  }
 }

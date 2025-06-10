@@ -26,18 +26,18 @@ export class OrderGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly jwtService: JwtService,private configService:ConfigService) {}
+  constructor(private readonly jwtService: JwtService, private configService: ConfigService) { }
 
   // ✅ Map to store sockets per user
   private userSockets = new Map<string, Set<Socket>>();
 
-async handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const token = this.extractBearerToken(client);
-    // console.log(`Attempting connection for client: ${client.id}`);
+    console.log(`Attempting connection for client: ${client.id}`);
 
     if (!token) {
-      // console.warn(`Client ${client.id}: Missing auth token. Disconnecting.`);
-      // client.emit('unauthorized', 'Missing auth token');
+      console.warn(`Client ${client.id}: Missing auth token. Disconnecting.`);
+      client.emit('unauthorized', 'Missing auth token');
       client.disconnect(true);
       return;
     }
@@ -66,20 +66,22 @@ async handleConnection(client: Socket) {
       // console.log(`Client ${client.id} added to userSockets for user ${userId}. Total sockets for user: ${this.userSockets.get(userId)?.size}`);
 
     } catch (err) {
-      // console.error(`Client ${client.id}: Invalid auth token. Error: ${err.message}. Disconnecting.`);
+      console.error(`Client ${client.id}: Invalid auth token. Error: ${err.message}. Disconnecting.`);
       client.emit('unauthorized', 'Invalid auth token');
       client.disconnect(true);
     }
   }
 
   async handleDisconnect(client: Socket) {
+    console.log('disconnecting');
+    
     const userId = client.data?.user?.userId;
     if (userId && this.userSockets.has(userId)) {
       this.userSockets.get(userId)!.delete(client);
       if (this.userSockets.get(userId)!.size === 0) {
         this.userSockets.delete(userId);
       }
-      // console.log(`Client disconnected: ${client.id} for user ${userId}`);
+      console.log(`Client disconnected: ${client.id} for user ${userId}`);
     }
   }
 
@@ -95,20 +97,24 @@ async handleConnection(client: Socket) {
 
   @SubscribeMessage('order_qr_scanned')
   handleQrScanned(@MessageBody() data: { orderId: string }, @ConnectedSocket() client: Socket) {
-  
-    
-    const currentUserId = client.data.user?.userId;    
+
+
+    const currentUserId = client.data.user?.userId;
+    console.log('current user id : ' + currentUserId);
+        console.log('current socket id : ' + client.id);
+
+
     if (!currentUserId) return;
 
     const sockets = this.userSockets.get(currentUserId);
-  
+
     if (!sockets) return;
 
     // ✅ Emit only to other devices (not the one that scanned)
     for (const socket of sockets) {
-      console.log('available '+socket.id);
+      console.log('available ' + socket.id);
       if (socket.id !== client.id) {
-        console.log('sent to '+socket.id);
+        console.log('sent to ' + socket.id);
         socket.emit('order_id', {
           orderId: data.orderId,
         });

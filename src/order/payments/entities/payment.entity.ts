@@ -19,9 +19,15 @@ export class Payment {
   @ManyToOne(() => Order, order => order.payments)
   order: Order;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  method: string;
+
   @OneToMany(() => Refund, refund => refund.payment)
   refunds: Refund[];
 
   @CreateDateColumn()
   createdAt: Date;
+
+   @Column({ type: 'timestamp', nullable: true })
+  paidAt: Date;
 }

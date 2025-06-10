@@ -39,8 +39,14 @@ export class Order {
   })
   paymentStatus: PaymentStatus;
 
-  @Column({ nullable: false,unique:true })
+  @Column({ nullable: false, unique: true })
   razorpayOrderId: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  successfulPaymentId: string;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  paymentMethod: string;
 
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];
@@ -51,13 +57,16 @@ export class Order {
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   totalAmount: number;
 
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  paidAmount: number;
+
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   subTotal: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   totalTax: number;
 
-   @Column({ type: 'varchar', length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   billingName: string;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
@@ -79,7 +88,7 @@ export class Order {
   @Column({ type: 'varchar', length: 6, nullable: true })
   billingPincode: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true,default:'India' })
+  @Column({ type: 'varchar', length: 100, nullable: true, default: 'India' })
   billingCountry: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -103,8 +112,11 @@ export class Order {
   @Column({ type: 'varchar', length: 6, nullable: true })
   shippingPincode: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true,default:'India' })
+  @Column({ type: 'varchar', length: 100, nullable: true, default: 'India' })
   shippingCountry: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  paidAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -116,26 +128,26 @@ export class Order {
   payments: Payment[];
 
   get fullBillingAddress(): string {
-  const parts = [
-    this.billingName,
-    this.billingStreetAddress,
-    this.billingCity,
-    this.billingState,
-    this.billingPincode,
-    this.billingCountry
-  ].filter(Boolean);
-  return parts.join(', ');
-}
+    const parts = [
+      this.billingName,
+      this.billingStreetAddress,
+      this.billingCity,
+      this.billingState,
+      this.billingPincode,
+      this.billingCountry
+    ].filter(Boolean);
+    return parts.join(', ');
+  }
 
-get fullShippingAddress(): string {
-  const parts = [
-    this.shippingName,
-    this.shippingStreetAddress,
-    this.shippingCity,
-    this.shippingState,
-    this.shippingPincode,
-    this.shippingCountry
-  ].filter(Boolean);
-  return parts.join(', ');
-}
+  get fullShippingAddress(): string {
+    const parts = [
+      this.shippingName,
+      this.shippingStreetAddress,
+      this.shippingCity,
+      this.shippingState,
+      this.shippingPincode,
+      this.shippingCountry
+    ].filter(Boolean);
+    return parts.join(', ');
+  }
 }
