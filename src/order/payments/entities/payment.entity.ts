@@ -20,7 +20,7 @@ export class Payment {
   order: Order;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  method: string;
+  paymentMethod: string;
 
   @OneToMany(() => Refund, refund => refund.payment)
   refunds: Refund[];

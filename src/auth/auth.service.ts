@@ -7,11 +7,13 @@ import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { EmailsService } from 'src/emails/emails.service';
 import { CustomerService } from 'src/customer/customer.service';
 import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
 import { Response } from 'express';
+import { OtpService } from './otp/otp.service';
+import { Otp } from './otp/entities/otp.entity';
 
 
 
@@ -30,8 +32,11 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailsService,
     private customerService: CustomerService,
+    private otpService: OtpService,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
+    @InjectRepository(Otp)
+    private otpRepository: Repository<Otp>,
     // private readonly redisService: RedisService,
 
   ) {
@@ -40,27 +45,6 @@ export class AuthService {
   }
 
 
-  async validateUser(email: string, otp: string): Promise<any> {
-    const user = await this.userService.findByUserEmail(email);
-
-    if (user.status !== 'ACTIVE') {
-      throw new UnauthorizedException('User is Blocked');
-    }
-
-    // if (user && bcrypt.compareSync(password, user.passwordHash)) {
-    //   const { passwordHash, ...result } = user;
-    //   return result;
-    // }
-
-    if (user && otp === '1111') {
-      const { passwordHash, ...result } = user;
-      return result;
-    }
-
-    //verifyotp code here
-
-    throw new UnauthorizedException('Invalid credentials');
-  }
 
 
 
@@ -79,7 +63,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    // Send OTP logic goes here
+    const { code } = await this.otpService.generateOtp(sendUserLoginOtpDto.email);
+    await this.emailService.sendOtpMail(sendUserLoginOtpDto.email, code)
     return { success: true, message: 'OTP sent successfully' };
   }
 
@@ -106,8 +91,46 @@ export class AuthService {
     };
   }
 
+  async validateUser(email: string, otp: string): Promise<any> {
+    const user = await this.userService.findByUserEmail(email);
 
-  async verifyGoogleToken(token: string,res: Response): Promise<any> {
+    if(!user){
+            throw new UnauthorizedException('You are an outsider');
+    }
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User is Blocked');
+    }
+
+      const now = new Date();
+
+  const storedOtp = await this.otpRepository.findOne({
+    where: {
+      email,
+      code: otp,
+      used: false,
+      expiresAt: MoreThan(now),
+    },
+    order: { createdAt: 'DESC' },
+  });
+
+  if (!storedOtp) {
+    throw new BadRequestException('OTP expired, invalid, or already used.');
+  }
+  storedOtp.used = true;
+  await this.otpRepository.save(storedOtp);
+
+    if (user) {
+      const { passwordHash, ...result } = user;
+      return result;
+    }
+
+    //verifyotp code here
+
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+
+  async verifyGoogleToken(token: string, res: Response): Promise<any> {
     try {
       // Verify the Google ID Token
       const ticket = await this.oauthClient.verifyIdToken({
@@ -133,7 +156,7 @@ export class AuthService {
           customer = await this.customerRepository.save(customer);
         }
 
-        return this.setCustomerToken(customer,res);
+        return this.setCustomerToken(customer, res);
 
         // const payload = {
         //   sub: customer.id,
@@ -165,8 +188,8 @@ export class AuthService {
       throw new ConflictException('Account already exists. Please log in.');
 
     }
-
-    await this.emailService.sendOtpMail(email);
+    const { code } = await this.otpService.generateOtp(email);
+    await this.emailService.sendOtpMail(email, code);
 
     // You can store OTP temporarily for verification purposes (in-memory, cache, or DB)
 
@@ -178,7 +201,8 @@ export class AuthService {
   async sendOtpForPasswordReset(email: string): Promise<any> {
     const customer = await this.customerRepository.findOne({ where: { emailId: email.toLowerCase() } });
     if (customer) {
-      await this.emailService.sendOtpMail(email);
+      const { code } = await this.otpService.generateOtp(email)
+      await this.emailService.sendOtpMail(email, code);
       return {
         message: `OTP sent to ${email}`,
       };
@@ -192,17 +216,27 @@ export class AuthService {
 
 
 
-  async verifyCustomerOtp(email: string, otp: string,res: Response, purpose?: string): Promise<any> {
+  async verifyCustomerOtp(email: string, otp: string, res: Response, purpose?: string): Promise<any> {
 
-    const storedOtp = '1111';
+    const now = new Date();
+
+    const storedOtp = await this.otpRepository.findOne({
+      where: {
+        email,
+        code: otp,
+        used: false,
+        expiresAt: MoreThan(now),
+      },
+      order: { createdAt: 'DESC' },
+    });
 
     if (!storedOtp) {
-      throw new BadRequestException('OTP expired or not found.');
+      throw new BadRequestException('OTP expired, invalid, or already used.');
     }
 
-    if (storedOtp !== otp) {
-      throw new UnauthorizedException('Invalid OTP.');
-    }
+    // Mark OTP as used
+    storedOtp.used = true;
+    await this.otpRepository.save(storedOtp);
 
 
     const payload = {
@@ -211,14 +245,14 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload, { expiresIn: '5m' });
-     res.cookie('access_token', access_token, {
+    res.cookie('access_token', access_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 1000 * 60 * 5,
       path: '/',
     });
-    return {message: 'OTP verified successfully'};
+    return { message: 'OTP verified successfully' };
   }
 
 
@@ -248,7 +282,7 @@ export class AuthService {
     return this.setCustomerToken(customer, res);
   }
 
-  async setCustomerToken(customer,res){
+  async setCustomerToken(customer, res) {
     const payload = {
       sub: customer.id,
       email: customer.emailId,
@@ -256,7 +290,7 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload);
-    
+
     // Set HTTP-only cookie
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -266,7 +300,7 @@ export class AuthService {
       path: '/',
     });
 
-    
+
 
     return {
       role: customer.role,

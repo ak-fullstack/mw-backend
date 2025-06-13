@@ -1,4 +1,4 @@
-import { Controller,Post, Body, UnauthorizedException, Res } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -9,7 +9,7 @@ import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
 
   // @Post('verify-otp')
@@ -29,56 +29,58 @@ export class AuthController {
 
 
   @Post('verify-oauth-token')
-async verifyToken(
-  @Body() body: { token: string },
-  @Res({ passthrough: true }) res: Response
-) {
-  const { token } = body;
+  async verifyToken(
+    @Body() body: { token: string },
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { token } = body;
 
-  if (!token) {
-    return { error: 'Token is required' };
+    if (!token) {
+      return { error: 'Token is required' };
+    }
+
+    try {
+      // Call your internal login method (this should set the cookie using res)
+      const response = await this.authService.verifyGoogleToken(token, res);
+      return response;
+    } catch (error) {
+      return { error: error.message };
+    }
   }
 
-  try {
-    // Call your internal login method (this should set the cookie using res)
-    const response = await this.authService.verifyGoogleToken(token, res);
-    return response;
-  } catch (error) {
-    return { error: error.message };
-  }
-}
+  
   @Post('register/send-customer-email-otp')
   async sendOtp(@Body() generateOtpDto: GenerateOtpDto): Promise<{ message: string }> {
     return this.authService.sendCustomerEmailOtpForRegistartion(generateOtpDto.email);
   }
 
   @Post('verify-customer-email-otp')
-async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto,@Res({ passthrough: true }) res: Response) {
-  return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp,res,verifyOtpDto.purpose);
-}
+  async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp, res, verifyOtpDto.purpose);
+  }
 
-@Post('customer-login')
-async login(
-  @Body() loginDto: LoginDto,
-  @Res({ passthrough: true }) res: Response
-): Promise<any> {
-  const customer = await this.authService.customerLogin(
-    loginDto.email,
-    loginDto.password,
-    res
-  );
+  @Post('customer-login')
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<any> {
+    const customer = await this.authService.customerLogin(
+      loginDto.email,
+      loginDto.password,
+      res
+    );
 
-  // Only return safe data (no token here)
-  return { role: customer.role };
-}
+    // Only return safe data (no token here)
+    return { role: customer.role };
+  }
 
-@Post('send-reset-otp')
-async sendResetOtp(@Body() generateOtpDto: GenerateOtpDto) {
-  const response = await this.authService.sendOtpForPasswordReset(generateOtpDto.email);
-  return response;
-}
+  @Post('send-reset-otp')
+  async sendResetOtp(@Body() generateOtpDto: GenerateOtpDto) {
+    const response = await this.authService.sendOtpForPasswordReset(generateOtpDto.email);
+    return response;
+  }
 
-@Post('logout')
+  @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
     // Clear HttpOnly cookie named 'token'
     res.cookie('access_token', '', {

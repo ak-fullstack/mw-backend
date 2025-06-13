@@ -7,6 +7,7 @@ import { PaymentStatus } from 'src/enum/payment-status.enum';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
+  CONFIRMED='CONFIRMED',
   PACKED = 'PACKED',
   SHIPPED = 'SHIPPED',
   CANCELLED = 'CANCELLED',
@@ -30,7 +31,7 @@ export class Order {
     enum: OrderStatus,
     default: OrderStatus.PENDING
   })
-  status: OrderStatus;
+  orderStatus: OrderStatus;
 
   @Column({
     type: 'enum',

@@ -13,6 +13,9 @@ import { EmailsService } from 'src/emails/emails.service';
 import { CustomerService } from 'src/customer/customer.service';
 // import { RedisService } from 'src/redis/redis.service';
 // import { RedisModule } from 'src/redis/redis.module';
+import { OtpModule } from './otp/otp.module';
+import { Otp } from './otp/entities/otp.entity';
+
 
 @Module({
   controllers: [AuthController],
@@ -20,7 +23,7 @@ import { CustomerService } from 'src/customer/customer.service';
   exports: [AuthService, JwtStrategy, JwtAuthGuard], 
   imports:[
     // RedisModule,
-    TypeOrmModule.forFeature([Customer]),
+    TypeOrmModule.forFeature([Customer,Otp]),
     UserModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -30,6 +33,7 @@ import { CustomerService } from 'src/customer/customer.service';
         signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') },
       }),
     }),
+    OtpModule,
   ]
 })
 export class AuthModule {}

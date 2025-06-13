@@ -4,7 +4,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { RazorpayService } from 'src/razorpay/razorpay.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Between, DataSource, In, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Stock } from 'src/inventory/stocks/entities/stock.entity';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { CustomerAddress } from 'src/customer/customer-address/entities/customer-address.entity';
@@ -93,7 +93,7 @@ export class OrdersService {
     order.totalTax = totalTax;
     order.totalAmount = totalAmount;
     order.totalDiscount=totalDiscount
-    order.status = OrderStatus.PENDING;
+    order.orderStatus = OrderStatus.PENDING;
     order.items = orderItems;
 
     const razorPayOrderDetails=await this.razorpayService.createOrder(order.totalAmount);
@@ -186,13 +186,72 @@ return { razorpayOrderId: razorPayOrderDetails.id,name:order.billingName,email:o
   });
 }
 
-async findAll(): Promise<any[]> {
-    const orders = await this.orderRepository.find();
-     return orders.map(order => ({
+async findAll(filters: {
+  id?: string;
+  razorpayOrderId?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+   startDate?: string;
+  endDate?: string;
+  page: number;
+  limit: number;
+}): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+  const where: any = {};
+    if (filters.id) {
+    where.id = filters.id;
+  }
+    if (filters.razorpayOrderId) {
+    where.razorpayOrderId = filters.razorpayOrderId;
+  }
+  
+  if (filters.orderStatus) {
+    const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
+    console.log(orderStatuses);
+    
+    if (orderStatuses.length > 0) {
+      where.orderStatus = In(orderStatuses);
+    }
+  }
+
+   if (filters.paymentStatus) {
+    const paymentStatuses = filters.paymentStatus.split(',').map(s => s.trim());
+    if (paymentStatuses.length > 0) {
+      where.paymentStatus = In(paymentStatuses);
+    }
+  }
+
+  
+if (filters.startDate && filters.endDate) {
+  const start = new Date(filters.startDate);
+  const end = new Date(filters.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  where.createdAt = Between(start, end);
+} else if (filters.startDate) {
+  where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
+} else if (filters.endDate) {
+  const end = new Date(filters.endDate);
+  end.setHours(23, 59, 59, 999);
+  where.createdAt = LessThanOrEqual(end);
+}
+
+  const skip = (filters.page - 1) * filters.limit;
+  const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
+    where,
+    skip,
+    take: filters.limit,
+    order: { createdAt: 'DESC' }, 
+  });
+
+    
+
+  return {total,page: filters.page,limit: filters.limit,
+    orders: orders.map(order => ({
     ...order,
     fullBillingAddress: order.fullBillingAddress,
     fullShippingAddress: order.fullShippingAddress
-  }));
+  }))
+}
   }
 
    async findById(id: number): Promise<Order> {

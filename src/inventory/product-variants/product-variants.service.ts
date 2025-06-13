@@ -38,6 +38,10 @@ export class ProductVariantsService {
     },
   });
 
+  if(products.length===0){
+      throw new NotFoundException('No products added');
+  }
+
   return products.map((product) => {
     const uniqueSizes = new Map<number, any>();
     const uniqueColors = new Map<number, any>();
@@ -67,6 +71,7 @@ export class ProductVariantsService {
       description: product.description,
       hasSizes: product.has_sizes,
       hasColors: product.has_colors,
+      hsnCode:product.hsnCode,
       sizes: Array.from(uniqueSizes.values()),
       colors: Array.from(uniqueColors.values()),
       variants,

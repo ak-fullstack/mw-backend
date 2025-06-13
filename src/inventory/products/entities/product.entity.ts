@@ -22,6 +22,9 @@ export class Product {
   @ManyToOne(() => Subcategory, subcategory => subcategory.products, { onDelete: 'SET NULL', nullable: true })
   subCategory: Subcategory;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  hsnCode: string;
+
   @Column({ default: false })
   has_sizes: boolean;
 

@@ -42,6 +42,7 @@ export class ProductsService {
       product.description = createProductDto.productDescription;
       product.has_sizes = createProductDto.hasSize;
       product.has_colors = createProductDto.hasColor;
+      product.hsnCode=createProductDto.hsnCode;
 
       const savedProduct = await queryRunner.manager.save(Product, product);
 

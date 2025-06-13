@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookreaders' Meetup Invitation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Vibrant gradient background */
+            background: linear-gradient(135deg, #a7d9e8 0%, #c4e7f3 50%, #d8f0f8 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width:21cm;
+            height:29.7cm;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 25px; /* Slightly more rounded */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); /* More pronounced shadow */
+            width: 20cm;
+            height:28cm;
+            text-align: center;
+            border: 3px solid #6cbef0; /* More vibrant blue border */
+            position: relative; /* Needed for absolute positioning of doodles */
+            overflow: hidden; /* Ensures doodles don't spill out */
+            display: flex; /* Use flexbox to center content vertically */
+            flex-direction: column;
+            justify-content: flex-start; /* Start content from the top, allowing it to flow */
+            align-items: center; /* Center content horizontally */
+            box-sizing: border-box; /* Include padding in width/height */
+            padding:30px;
+        }
+        /* Adjust font sizes and margins for better fit in square layout */
+        .club-name {
+            color: #8e44ad; /* Purple for club name */
+            font-size: 1.3rem; /* Adjusted for space */
+            font-weight: 700;
+            margin-bottom: 10px; /* Adjusted margin */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+        h1 {
+            color: #2c3e50; /* Dark blue-gray for main title */
+            font-size: 2.2rem; /* Adjusted for space */
+            margin-bottom: 15px; /* Adjusted margin */
+            line-height: 1.2;
+            font-weight: 800; /* Extra bold */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
+        }
+        h3 {
+            color: #3498db; /* Bright blue for section headings */
+            font-size: 1.5rem; /* Adjusted for space */
+            margin-top: 22px; /* Adjusted margin */
+            margin-bottom: 10px; /* Adjusted margin */
+            font-weight: 700;
+        }
+        p, li {
+            color: #4a4a4a; /* Darker gray for better contrast */
+            font-size: 1rem; /* Slightly reduced for better fit */
+            line-height: 1.5;
+            margin-bottom: 5px; /* Reduced margin */
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 15px; /* Adjusted margin */
+            width: 100%; /* Allow lists to use available width */
+            padding-left: 20px; /* Indent lists slightly */
+            padding-right: 20px; /* Indent lists slightly */
+        }
+        li strong {
+            color: #333;
+        }
+        .highlight {
+            font-weight: 700;
+            color: #e74c3c; /* Striking red for key highlights */
+        }
+        .call-to-action {
+            margin-top: 22px; /* Adjusted margin */
+            font-size: 1.05rem; /* Adjusted for space */
+            color: #333;
+        }
+        .contact-info {
+            color: #2ecc71; /* Green for contact info */
+            font-weight: 700;
+            text-decoration: underline;
+            transition: color 0.3s ease; /* Smooth transition on hover */
+        }
+        .contact-info:hover {
+            color: #27ae60;
+        }
+        hr {
+            border: none;
+            border-top: 3px dashed #8e44ad; /* Purple dashed separator */
+            margin: 22px auto; /* Adjusted margin */
+            width: 70%; /* Slightly narrower for focus */
+        }
+        .text-lg.mt-8.font-semibold {
+            color: #ff6b6b; /* Playful red for "Happy Reading!" */
+            margin-top: 18px; /* Adjusted margin */
+            font-size: 1.1rem; /* Adjusted for overall reduction */
+        }
+        .text-md.mt-4 {
+            color: #6a6a6a;
+            margin-top: 8px; /* Adjusted margin */
+            font-size: 0.95rem; /* Adjusted for overall reduction */
+        }
+        .doodle {
+            position: absolute;
+            font-size: 1.8rem; /* Adjusted size for doodles */
+            opacity: 0.6; /* Slightly transparent */
+            z-index: 0; /* Behind text */
+        }
+        .doodle-top-left {
+            top: 5px; /* Adjusted position */
+            left: 5px; /* Adjusted position */
+            transform: rotate(-15deg);
+        }
+        .doodle-top-right {
+            top: 8px; /* Adjusted position */
+            right: 8px; /* Adjusted position */
+            transform: rotate(10deg);
+        }
+        .doodle-mid-left {
+            top: 40%;
+            left: -5px;
+            transform: rotate(20deg);
+            font-size: 1.5rem;
+        }
+        .doodle-mid-right {
+            top: 60%;
+            right: -5px;
+            transform: rotate(-10deg);
+            font-size: 1.5rem;
+        }
+        .doodle-bottom-left {
+            bottom: 5px; /* Adjusted position */
+            left: 10px; /* Adjusted position */
+            transform: rotate(5deg);
+        }
+        .doodle-bottom-right {
+            bottom: 8px; /* Adjusted position */
+            right: 5px; /* Adjusted position */
+            transform: rotate(-20deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Doodles -->
+        <div class="doodle doodle-top-left">✨</div>
+        <div class="doodle doodle-top-right">📚</div>
+        <div class="doodle doodle-mid-left">💡</div> <!-- New doodle -->
+        <div class="doodle doodle-mid-right">✍️</div> <!-- New doodle -->
+        <div class="doodle doodle-bottom-left">☕</div>
+        <div class="doodle doodle-bottom-right">💬</div>
+
+        <div class="club-name">Booktopia's Readelight</div>
+        <h1>You're Invited! Join Our Bookworms' Rendezvous!</h1>
+        
+        <p>We're excited to announce our <span class="highlight">fourth Bookreaders' Meetup</span>, a cozy gathering designed for bibliophiles like you to share, discover, and simply enjoy the magic of books together.</p>
+
+        <hr>
+
+        <h3>What to Expect:</h3>
+        <ul class="text-left mx-auto">
+            <li>✨ <span class="highlight">Engaging Conversations:</span> Lively book chats.</li>
+            <li>💡 <span class="highlight">New Discoveries:</span> Discover new reads.</li>
+            <li>🤝 <span class="highlight">Fellowship:</span> Connect with fellow book lovers.</li>
+            <li>☕ <span class="highlight">Relaxed Atmosphere:</span> Casual & friendly setting.</li>
+        </ul>
+
+        <hr>
+
+        <h3>Event Details:</h3>
+        <p class="event-details-line">
+            <strong class="highlight">Date:</strong> <span>Sunday, June 15, 2025</span>
+            <span>|</span>
+            <strong class="highlight">Time:</strong> <span>3:00 PM - 5:00 PM</span>
+            <span>|</span>
+            <strong class="highlight">Where:</strong> <span>Online via Google Meet</span>
+        </p>
+        <p class="single-column-detail"><strong class="highlight">Joining Link:</strong> <a href="https://meet.google.com/xek-mjcd-dgw" class="contact-info">https://meet.google.com/xek-mjcd-dgw</a> (Link will be active closer to the event)</p>
+        <p class="single-column-detail"><strong class="highlight">What to Bring:</strong> Just bring your current read, a favorite book you'd like to share, or simply your love for books!</p>
+
+        <p>We can't wait to share stories, insights, and perhaps a virtual cup of coffee or tea with you!</p>
+
+        <p class="text-lg mt-8 font-semibold">Happy Reading!</p>
+
+        <p class="text-md mt-4">Warmly,<br><strong>Readelight @ Booktopia</strong></p>
+    </div>
+</body>
+</html>

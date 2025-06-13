@@ -66,6 +66,10 @@ export class CreateProductDto {
   @IsNotEmpty()
   productDescription: string;
 
+  @IsString()
+  @IsNotEmpty()
+  hsnCode: string;
+
   @IsBoolean()
   hasSize: boolean;
 

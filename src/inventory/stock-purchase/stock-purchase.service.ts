@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateStockPurchaseDto } from './dto/create-stock-purchase.dto';
 import { UpdateStockPurchaseDto } from './dto/update-stock-purchase.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,7 +15,7 @@ export class StockPurchaseService {
   ) {}
 
 async findAllWithStocks(): Promise<StockPurchase[]> {
-  return this.stockPurchaseRepo.find({
+  const stocks = await this.stockPurchaseRepo.find({
     relations: [
       'stocks',
       'stocks.productVariant',
@@ -25,6 +25,12 @@ async findAllWithStocks(): Promise<StockPurchase[]> {
     ],
     order: { purchaseDate: 'DESC' },
   });
+
+  if(stocks.length===0){
+      throw new NotFoundException('No stocks added');
+  }
+
+  return stocks
 }
 
 
