@@ -74,8 +74,8 @@ export class RazorpayService {
   async confirmPayment(orderId: string) {
     const payments = await this.getRazorpayPayments(orderId);
     console.log(payments);
-    
-    
+
+
     const successfulPayment = payments.items.find(
       (payment) => payment.status === 'captured'
     );
@@ -84,6 +84,22 @@ export class RazorpayService {
       await this.paymentsService.updateSuccessfulpaymentManually(successfulPayment);
       return;
     }
+
+    const failedPayments = payments.items.filter(
+      (payment) => payment.status === 'failed'
+    );
+
+      if (failedPayments.length > 0) {
+    await Promise.all(
+      failedPayments.map((payment) =>
+        this.paymentsService.updateFailedPayment(payment)
+      )
+    );
+        throw new BadRequestException('Payment failed.');
+
+  }
+
+
     throw new BadRequestException('Order is not paid yet.');
 
   }

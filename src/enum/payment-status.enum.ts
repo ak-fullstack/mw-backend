@@ -3,7 +3,7 @@ export enum PaymentStatus {
   PENDING = 'PENDING',          // Payment pending (e.g., waiting for confirmation)
   AUTHORIZED = 'authorized',    // Payment authorized but not yet captured
   PAID = 'PAID',        // Payment successfully captured/paid
-  FAILED = 'failed',            // Payment failed or declined
+  FAILED = 'FAILED',            // Payment failed or declined
   REFUNDED = 'refunded',        // Payment fully refunded
   PARTIALLY_REFUNDED = 'partially_refunded', // Partial refund issued
   CANCELLED = 'cancelled',      // Payment cancelled before completion
