@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { RazorpayService } from 'src/razorpay/razorpay.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order, OrderStatus } from './entities/order.entity';
+import { Order } from './entities/order.entity';
 import { Between, DataSource, In, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Stock } from 'src/inventory/stocks/entities/stock.entity';
 import { Customer } from 'src/customer/entities/customer.entity';
@@ -11,12 +11,18 @@ import { CustomerAddress } from 'src/customer/customer-address/entities/customer
 import { State, StateGstTypeMap } from 'src/enum/states.enum';
 import { OrderItem } from '../order-items/entities/order-item.entity';
 import { GstType } from 'src/enum/gst-types.enum';
+import { OrderStatus } from 'src/enum/order-status.enum';
+import { PaymentStatus } from 'src/enum/payment-status.enum';
+import { StockStage } from 'src/enum/stock-stages.enum';
+import { StockMovementsService } from 'src/inventory/stock-movements/stock-movements.service';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
 
   constructor(
     private readonly razorpayService: RazorpayService,
+    private readonly stockMovementsService: StockMovementsService,
 
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -30,12 +36,12 @@ export class OrdersService {
   ) { }
 
   async create(createOrderDto: CreateOrderDto, customerId: number): Promise<any> {
-    
+
     const customer = await this.customerRepository.findOne({ where: { id: customerId } });
 
-    
+
     if (!customer) {
-      
+
       throw new UnauthorizedException('Customer not found');
     }
 
@@ -92,185 +98,292 @@ export class OrdersService {
     order.subTotal = subTotal;
     order.totalTax = totalTax;
     order.totalAmount = totalAmount;
-    order.totalDiscount=totalDiscount
+    order.totalDiscount = totalDiscount
     order.orderStatus = OrderStatus.PENDING;
     order.items = orderItems;
 
-    const razorPayOrderDetails=await this.razorpayService.createOrder(order.totalAmount);
-    
+    const razorPayOrderDetails = await this.razorpayService.createOrder(order.totalAmount);
+
     console.log(razorPayOrderDetails);
-    
-    order.razorpayOrderId=razorPayOrderDetails.id;
 
-     await this.dataSource.transaction(async manager => {
-    const savedOrder = await manager.save(Order, order);
-    for (const item of orderItems) {
-      item.order = savedOrder;
-      await manager.save(OrderItem, item);
-    }
-  });
+    order.razorpayOrderId = razorPayOrderDetails.id;
 
-return { razorpayOrderId: razorPayOrderDetails.id,name:order.billingName,email:order.billingEmailId,contact:order.billingPhoneNumber }
+    await this.dataSource.transaction(async manager => {
+      const savedOrder = await manager.save(Order, order);
+      for (const item of orderItems) {
+        item.order = savedOrder;
+        await manager.save(OrderItem, item);
+      }
+    });
+
+    return { razorpayOrderId: razorPayOrderDetails.id, name: order.billingName, email: order.billingEmailId, contact: order.billingPhoneNumber }
   }
 
   private async calculateOrder(
-  items: OrderItemDto[],
-  shippingState: State
-): Promise<{ orderItems: OrderItem[]; subTotal: number; totalTax: number; totalAmount: number; totalDiscount: number }> {
-  return await this.dataSource.transaction(async (manager) => {
-    const orderItems: OrderItem[] = [];
-    let subTotal = 0;
-    let totalTax = 0;
-    let totalAmount = 0;
-    let totalDiscount = 0;
+    items: OrderItemDto[],
+    shippingState: State
+  ): Promise<{ orderItems: OrderItem[]; subTotal: number; totalTax: number; totalAmount: number; totalDiscount: number }> {
+    return await this.dataSource.transaction(async (manager) => {
+      const orderItems: OrderItem[] = [];
+      let subTotal = 0;
+      let totalTax = 0;
+      let totalAmount = 0;
+      let totalDiscount = 0;
 
-    const gstType = StateGstTypeMap[shippingState];
+      const gstType = StateGstTypeMap[shippingState];
 
-    for (const item of items) {
-      const stock = await manager.findOne(Stock, {
-        where: { id: item.stockId },
-        relations: ['productVariant'],
-      });
+      for (const item of items) {
+        const stock = await manager.findOne(Stock, {
+          where: { id: item.stockId },
+          relations: ['productVariant'],
+        });
 
-      if (!stock) {
-        throw new NotFoundException(`Stock with ID ${item.stockId} not found`);
+        if (!stock) {
+          throw new NotFoundException(`Stock with ID ${item.stockId} not found`);
+        }
+
+        if (!stock.approved || !stock.onSale) {
+          throw new BadRequestException(`Stock ID ${item.stockId} is not available for sale`);
+        }
+
+        if (stock.available < item.quantity) {
+          throw new BadRequestException(`Insufficient stock for stock ID ${item.stockId}`);
+        }
+
+        // Reserve stock within transaction
+        stock.reserved += item.quantity;
+        await manager.save(stock);
+
+        const orderItem = new OrderItem();
+        orderItem.stock = stock;
+        orderItem.productVariant = stock.productVariant;
+        orderItem.quantity = item.quantity;
+        orderItem.sp = stock.sp;
+        orderItem.mrp = stock.mrp;
+        orderItem.cgst = stock.cgst;
+        orderItem.sgst = stock.sgst;
+        orderItem.igst = stock.igst;
+        orderItem.discount = stock.discount;
+        orderItem.ctc = stock.ctc;
+        orderItem.gstType = gstType;
+        orderItem.subTotal = stock.sp * item.quantity;
+        orderItem.cgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.cgst) / 100 : 0;
+        orderItem.sgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.sgst) / 100 : 0;
+        orderItem.igstAmount = gstType === GstType.IGST ? (orderItem.subTotal * stock.igst) / 100 : 0;
+        orderItem.taxAmount = orderItem.cgstAmount + orderItem.sgstAmount + orderItem.igstAmount;
+        orderItem.totalAmount = orderItem.subTotal + orderItem.taxAmount;
+        orderItem.discount = 0;
+
+        subTotal += orderItem.subTotal;
+        totalTax += orderItem.taxAmount;
+        totalAmount += orderItem.totalAmount;
+        totalDiscount = 0;
+
+        orderItems.push(orderItem);
       }
 
-      if (!stock.approved || !stock.onSale) {
-        throw new BadRequestException(`Stock ID ${item.stockId} is not available for sale`);
-      }
+      return {
+        orderItems,
+        subTotal,
+        totalTax,
+        totalAmount,
+        totalDiscount,
+      };
+    });
+  }
 
-      if (stock.available < item.quantity) {
-        throw new BadRequestException(`Insufficient stock for stock ID ${item.stockId}`);
-      }
-
-      // Reserve stock within transaction
-      stock.reserved += item.quantity;
-      await manager.save(stock);
-
-      const orderItem = new OrderItem();
-      orderItem.stock = stock;
-      orderItem.productVariant = stock.productVariant;
-      orderItem.quantity = item.quantity;
-      orderItem.sp = stock.sp;
-      orderItem.mrp = stock.mrp;
-      orderItem.cgst = stock.cgst;
-      orderItem.sgst = stock.sgst;
-      orderItem.igst = stock.igst;
-      orderItem.discount = stock.discount;
-      orderItem.ctc = stock.ctc;
-      orderItem.gstType = gstType;
-      orderItem.subTotal = stock.sp * item.quantity;
-      orderItem.cgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.cgst) / 100 : 0;
-      orderItem.sgstAmount = gstType === GstType.CGST_SGST ? (orderItem.subTotal * stock.sgst) / 100 : 0;
-      orderItem.igstAmount = gstType === GstType.IGST ? (orderItem.subTotal * stock.igst) / 100 : 0;
-      orderItem.taxAmount = orderItem.cgstAmount + orderItem.sgstAmount + orderItem.igstAmount;
-      orderItem.totalAmount = orderItem.subTotal + orderItem.taxAmount;
-      orderItem.discount = 0;
-
-      subTotal += orderItem.subTotal;
-      totalTax += orderItem.taxAmount;
-      totalAmount += orderItem.totalAmount;
-      totalDiscount = 0;
-
-      orderItems.push(orderItem);
+  async findAll(filters: {
+    id?: string;
+    razorpayOrderId?: string;
+    orderStatus?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+    const where: any = {};
+    if (filters.id) {
+      where.id = filters.id;
     }
+    if (filters.razorpayOrderId) {
+      where.razorpayOrderId = filters.razorpayOrderId;
+    }
+
+    if (filters.orderStatus) {
+      const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
+
+      if (orderStatuses.length > 0) {
+        where.orderStatus = In(orderStatuses);
+      }
+    }
+
+    if (filters.paymentStatus) {
+      const paymentStatuses = filters.paymentStatus.split(',').map(s => s.trim());
+      if (paymentStatuses.length > 0) {
+        where.paymentStatus = In(paymentStatuses);
+      }
+    }
+
+
+    if (filters.startDate && filters.endDate) {
+      const start = new Date(filters.startDate);
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+
+      where.createdAt = Between(start, end);
+    } else if (filters.startDate) {
+      where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
+    } else if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = LessThanOrEqual(end);
+    }
+
+    const skip = (filters.page - 1) * filters.limit;
+    const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
+      where,
+      skip,
+      take: filters.limit,
+      order: { createdAt: 'DESC' },
+    });
+
+
 
     return {
-      orderItems,
-      subTotal,
-      totalTax,
-      totalAmount,
-      totalDiscount,
-    };
-  });
-}
-
-async findAll(filters: {
-  id?: string;
-  razorpayOrderId?: string;
-  orderStatus?: string;
-  paymentStatus?: string;
-   startDate?: string;
-  endDate?: string;
-  page: number;
-  limit: number;
-}): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
-  const where: any = {};
-    if (filters.id) {
-    where.id = filters.id;
-  }
-    if (filters.razorpayOrderId) {
-    where.razorpayOrderId = filters.razorpayOrderId;
-  }
-  
-  if (filters.orderStatus) {
-    const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
-    console.log(orderStatuses);
-    
-    if (orderStatuses.length > 0) {
-      where.orderStatus = In(orderStatuses);
+      total, page: filters.page, limit: filters.limit,
+      orders: orders.map(order => ({
+        ...order,
+        fullBillingAddress: order.fullBillingAddress,
+        fullShippingAddress: order.fullShippingAddress
+      }))
     }
   }
 
-   if (filters.paymentStatus) {
-    const paymentStatuses = filters.paymentStatus.split(',').map(s => s.trim());
-    if (paymentStatuses.length > 0) {
-      where.paymentStatus = In(paymentStatuses);
+  async findById(id: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: [
+        'items',
+        'items.productVariant',
+        'items.productVariant.size',
+        'items.productVariant.color',
+        'items.productVariant.images',
+        'items.productVariant.product',
+      ],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    return order;
+  }
+
+  async findReceptionOrders(filters: {
+    id?: string;
+    razorpayOrderId?: string;
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+    try {
+      const where: any = {
+        orderStatus: OrderStatus.CONFIRMED,
+        paymentStatus: PaymentStatus.PAID,
+      };
+
+      if (filters.id) {
+        const idNum = parseInt(filters.id);
+        if (!isNaN(idNum)) where.id = idNum;
+      }
+
+      if (filters.razorpayOrderId) {
+        where.razorpayOrderId = filters.razorpayOrderId;
+      }
+
+      if (filters.startDate && filters.endDate) {
+        const start = new Date(filters.startDate);
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = Between(start, end);
+      } else if (filters.startDate) {
+        where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
+      } else if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = LessThanOrEqual(end);
+      }
+
+      const skip = (filters.page - 1) * filters.limit;
+
+      const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
+        where,
+        skip,
+        take: filters.limit,
+        order: { createdAt: 'DESC' },
+      });
+
+      return {
+        total,
+        page: filters.page,
+        limit: filters.limit,
+        orders: orders.map(order => ({
+          ...order,
+          fullBillingAddress: order.fullBillingAddress,
+          fullShippingAddress: order.fullShippingAddress,
+        })),
+      };
+
+    } catch (err) {
+      console.error('🔥 Error in findReceptionOrders():', err);
+      throw new InternalServerErrorException(err.message || 'Internal error');
     }
   }
 
-  
-if (filters.startDate && filters.endDate) {
-  const start = new Date(filters.startDate);
-  const end = new Date(filters.endDate);
-  end.setHours(23, 59, 59, 999);
+  async moveToQc(updateOrderStausDto: UpdateOrderStatusDto): Promise<any> {
+    const { orderId, movedBy, remarks } = updateOrderStausDto;
+    return await this.dataSource.transaction(async (manager) => {
 
-  where.createdAt = Between(start, end);
-} else if (filters.startDate) {
-  where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
-} else if (filters.endDate) {
-  const end = new Date(filters.endDate);
-  end.setHours(23, 59, 59, 999);
-  where.createdAt = LessThanOrEqual(end);
-}
+      const order = await this.orderRepository.findOne({
+        where: { id: orderId },
+      });
 
-  const skip = (filters.page - 1) * filters.limit;
-  const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
-    where,
-    skip,
-    take: filters.limit,
-    order: { createdAt: 'DESC' }, 
-  });
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
 
-    
+      if (order.paymentStatus !== PaymentStatus.PAID) {
+        throw new BadRequestException('Order is not paid');
+      }
 
-  return {total,page: filters.page,limit: filters.limit,
-    orders: orders.map(order => ({
-    ...order,
-    fullBillingAddress: order.fullBillingAddress,
-    fullShippingAddress: order.fullShippingAddress
-  }))
-}
+      if (order.orderStatus !== 'CONFIRMED') {
+        throw new BadRequestException('Order is not confirmed');
+      }
+
+      order.orderStatus = OrderStatus.QC_CHECK;
+      await manager.save(order);
+
+      const orderItems = await manager.find(OrderItem, {
+        where: { order: { id: orderId } },
+      });
+
+      if (!orderItems || orderItems.length === 0) {
+        throw new BadRequestException('No order items found');
+      }
+
+      const movements = orderItems.map((orderItem) => ({
+        stockId: orderItem.stock.id,
+        orderItemId: orderItem.id,
+        quantity: orderItem.quantity,
+        from: StockStage.STORAGE,
+        to: StockStage.QC_CHECK,
+      }));
+
+      await this.stockMovementsService.createMovements(movements, manager);
+      return {message: 'Order Successfully moved to QA_CHECK'}
+    });
   }
 
-   async findById(id: number): Promise<Order> {
-  const order = await this.orderRepository.findOne({
-    where: { id },
-    relations: [
-      'items',
-      'items.productVariant',
-      'items.productVariant.size',
-      'items.productVariant.color',
-      'items.productVariant.images',
-      'items.productVariant.product',
-    ],
-  });
-
-  if (!order) {
-    throw new NotFoundException(`Order with ID ${id} not found`);
-  }
-
-  return order;
-}
 }

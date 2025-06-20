@@ -2,11 +2,13 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne
+  ManyToOne,
+  OneToMany
 } from 'typeorm';
 import { StockPurchase } from 'src/inventory/stock-purchase/entities/stock-purchase.entity';
 import { ProductVariant } from 'src/inventory/product-variants/entities/product-variant.entity';
 import { DecimalToNumber } from 'src/common/transformers/decimal-transformer';
+import { StockMovement } from 'src/inventory/stock-movements/entities/stock-movement.entity';
 
 @Entity('stocks')
 export class Stock {
@@ -72,6 +74,9 @@ export class Stock {
 
   @Column({ default: false })
   onSale: boolean;
+
+  @OneToMany(() => StockMovement, (movement) => movement.stock)
+  stockMovements: StockMovement[];
 
   get available(): number {
     return this.quantity - this.used - this.reserved;

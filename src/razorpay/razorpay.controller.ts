@@ -18,7 +18,7 @@ async handleWebhook(@Req() req: Request) {
 
  @Get(':razorpayOrderId')
   async updatePaymentManually(@Param('razorpayOrderId') razorpayOrderId: string) {
-     await this.razorpayService.confirmPayment(razorpayOrderId);
-     return {message:'Payment Updated'}
+     return await this.razorpayService.confirmPayment(razorpayOrderId);
+     
   }
 }

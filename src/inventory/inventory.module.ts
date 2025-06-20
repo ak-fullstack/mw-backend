@@ -9,8 +9,9 @@ import { ProductVariantsModule } from './product-variants/product-variants.modul
 import { ProductImagesModule } from './product-images/product-images.module';
 import { StockPurchaseModule } from './stock-purchase/stock-purchase.module';
 import { StocksModule } from './stocks/stocks.module';
+import { StockMovementsModule } from './stock-movements/stock-movements.module';
 
 @Module({
-  imports: [ProductsModule, CategoryModule, SubcategoryModule, ColorsModule, SizeTypesModule, SizesModule, ProductVariantsModule, ProductImagesModule, StockPurchaseModule, StocksModule],
+  imports: [ProductsModule, CategoryModule, SubcategoryModule, ColorsModule, SizeTypesModule, SizesModule, ProductVariantsModule, ProductImagesModule, StockPurchaseModule, StocksModule, StockMovementsModule],
 })
 export class InventoryModule {}

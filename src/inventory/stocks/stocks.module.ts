@@ -4,11 +4,12 @@ import { StocksController } from './stocks.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Stock } from './entities/stock.entity';
 import { ProductVariant } from '../product-variants/entities/product-variant.entity';
+import { StockMovementsModule } from '../stock-movements/stock-movements.module';
 
 @Module({
   controllers: [StocksController],
   providers: [StocksService],
-    imports: [TypeOrmModule.forFeature([Stock,ProductVariant])],
+    imports: [StockMovementsModule, TypeOrmModule.forFeature([Stock,ProductVariant])],
   
 })
 export class StocksModule {}

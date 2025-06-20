@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Res, Param, UsePipes, ValidationPipe, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Param, UsePipes, ValidationPipe, UseGuards, Req, Query, Patch } from '@nestjs/common';
 import { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -6,6 +6,8 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { QrCodeService } from 'src/qr-code/qr-code.service'; 
+import { FindReceptionOrdersQueryDto } from './dto/reception-orders.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 
 @Controller('orders')
@@ -45,6 +47,20 @@ getAllOrders(
   });
 }
 
+@Get('reception-orders')
+getReceptionOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
+  return this.ordersService.findReceptionOrders({
+    ...query,
+    page: parseInt(query.page),
+    limit: parseInt(query.limit),
+  });
+}
+
+@Patch('move-to-qc')
+moveToQc(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
+  return this.ordersService.moveToQc(updateOrderStausDto);
+}
+
 
     @Get(':id')
   async findOne(@Param('id') id: number): Promise<any > {
@@ -57,5 +73,7 @@ getAllOrders(
     res.setHeader('Content-Type', 'image/png');
     res.send(buffer);
   }
+
+
 
 }

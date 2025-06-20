@@ -29,20 +29,6 @@ export class StocksController {
     return this.stocksService.getLatestStockPerProduct();
   }
 
-  @Get()
-  findAll() {
-    return this.stocksService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.stocksService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStockDto: UpdateStockDto) {
-    return this.stocksService.update(+id, updateStockDto);
-  }
 
   @Patch('approve/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -58,10 +44,6 @@ export class StocksController {
     return this.stocksService.toggleSale(+id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.stocksService.remove(+id);
-  }
 
   
 }

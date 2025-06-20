@@ -1,9 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Payment } from './entities/payment.entity';
-import { Order, OrderStatus } from '../orders/entities/order.entity';
+import { Order } from '../orders/entities/order.entity';
 import { DataSource, Repository } from 'typeorm';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
+import { OrderStatus } from 'src/enum/order-status.enum';
 
 @Injectable()
 export class PaymentsService {
@@ -22,13 +23,28 @@ export class PaymentsService {
     const razorpayOrderId = payload.payload.payment.entity.order_id;
     const razorpayPaymentId = payload.payload.payment.entity.id;
     const amount = payload.payload.payment.entity.amount / 100;
-    const status = payload.event; // e.g., 'payment.captured', 'payment.failed'
+    const event = payload.event;
     const paymentMethod = payload.payload.payment.entity.method;
-    const createdAt = new Date(payload.payload.payment.entity.created_at*1000);
+    const createdAt = new Date(payload.payload.payment.entity.created_at * 1000);
 
 
     const order = await this.orderRepository.findOne({ where: { razorpayOrderId } });
     if (!order) throw new Error('Order not found');
+
+     if (order.paymentStatus !== PaymentStatus.PAID) {
+    if (event === 'payment.failed') {
+      order.paymentStatus = PaymentStatus.FAILED;
+      order.orderStatus = OrderStatus.CANCELLED;
+    } else if (event === 'payment.captured') {
+      order.paymentStatus = PaymentStatus.PAID;
+      order.orderStatus = OrderStatus.CONFIRMED;
+      order.successfulPaymentId = razorpayPaymentId;
+    } else {
+      order.paymentStatus = PaymentStatus.PENDING;
+    }
+    await this.orderRepository.save(order);
+  }
+
 
     let payment = await this.paymentRepository.findOne({ where: { razorpayPaymentId } });
 
@@ -46,118 +62,55 @@ export class PaymentsService {
     }
 
     await this.paymentRepository.save(payment);
-    if(status==='payment.failed'){
-      order.paymentStatus = PaymentStatus.FAILED;
-      order.orderStatus = OrderStatus.CANCELLED;
-    }
-    if (status === 'payment.captured') {
-      order.paymentStatus = PaymentStatus.PAID;
-      order.orderStatus = OrderStatus.CONFIRMED;
-      order.successfulPaymentId = razorpayPaymentId;
-      await this.orderRepository.save(order);
-    }
   }
 
-  async updateSuccessfulpaymentManually(successfulPayment) {
-    await this.dataSource.transaction(async (manager) => {
-      const paymentId = successfulPayment.id;
-      const orderId = successfulPayment.order_id;
-      const amount = successfulPayment.amount;
-      const paymentMethod = successfulPayment.method;
-      const status = successfulPayment.status;
-      const paidAt = new Date(successfulPayment.created_at * 1000);
+  async updatePaymentStatusManually(latestPayment:any){
+    const razorpayOrderId = latestPayment.order_id;
+  const razorpayPaymentId = latestPayment.id;
+  const amount = latestPayment.amount / 100;
+  const status = latestPayment.status; // 'captured', 'failed', 'authorized', etc.
+  const paymentMethod = latestPayment.method;
+  const createdAt = new Date(latestPayment.created_at * 1000);
 
-      const order = await manager.findOne(Order, {
-        where: { razorpayOrderId: orderId },
-      });
+  const order = await this.orderRepository.findOne({ where: { razorpayOrderId } });
+  if (!order) throw new NotFoundException('Order not found.');
 
-      if (!order) {
-        throw new NotFoundException(`Order with Razorpay Order ID ${orderId} not found`);
-      }
+  if (order.paymentStatus === PaymentStatus.PAID) throw new BadRequestException('Order is already paid');
 
-      if (order.paymentStatus === PaymentStatus.PAID) {
-        throw new ConflictException(`Order already marked as paid`);
-      }
-
-      order.paymentStatus = PaymentStatus.PAID;
-      order.successfulPaymentId = paymentId;
-      order.paymentMethod = paymentMethod;
-      order.paidAmount = amount;
-      order.paidAt = paidAt;
-
-      let payment = await this.paymentRepository.findOne({ where: { razorpayPaymentId:paymentId } });
-       if(!payment){
-        payment = this.paymentRepository.create({
-        razorpayPaymentId: paymentId,
-        amount,
-        paymentMethod,
-        status,
-        order,
-        paidAt
-      });
-       }
-       else{
-        payment.status = status;
-        payment.paidAt=paidAt;
-
-       }
-
-      await manager.save(Payment, payment);
-      await manager.save(Order, order);
-
-    });
-
-    return
-  }
-
-
-  async updateFailedPayment(failedPayment: any) {
-  await this.dataSource.transaction(async (manager) => {
-    const paymentId = failedPayment.id;
-    const orderId = failedPayment.order_id;
-    const amount = failedPayment.amount;
-    const paymentMethod = failedPayment.method;
-    const status = failedPayment.status;
-    const failedAt = new Date(failedPayment.created_at * 1000);
-    const errorReason = failedPayment.error_description || 'Unknown reason';
-
-    const order = await manager.findOne(Order, {
-      where: { razorpayOrderId: orderId },
-    });
-
-    if (!order) {
-      throw new NotFoundException(`Order with Razorpay Order ID ${orderId} not found`);
-    }
-
-    if (order.paymentStatus === PaymentStatus.PAID) {
-      return;
-    }
-
-    let payment = await this.paymentRepository.findOne({
-      where: { razorpayPaymentId: paymentId },
-    });
-
-    if (!payment) {
-      payment = this.paymentRepository.create({
-        razorpayPaymentId: paymentId,
-        amount,
-        paymentMethod,
-        status,
-        order,
-      });
-    } else {
-      payment.status = status;
-    }
-
-    // Optionally update the order status (e.g., for audit purposes)
+     if (status === 'captured') {
+    order.paymentStatus = PaymentStatus.PAID;
+    order.orderStatus = OrderStatus.CONFIRMED;
+    order.successfulPaymentId = razorpayPaymentId;
+  } else if (status === 'failed') {
     order.paymentStatus = PaymentStatus.FAILED;
-    order.orderStatus=OrderStatus.CANCELLED;
+    order.orderStatus = OrderStatus.CANCELLED;
+  } else {
+    // 'authorized' or other non-final states
+    order.paymentStatus = PaymentStatus.PENDING;
+  }
 
-    await manager.save(Payment, payment);
-    await manager.save(Order, order);
-  });
+  await this.orderRepository.save(order);
 
-return;
-}
+  // 4. Update or create payment record
+  let payment = await this.paymentRepository.findOne({ where: { razorpayPaymentId } });
+
+  if (!payment) {
+    payment = this.paymentRepository.create({
+      razorpayPaymentId,
+      amount,
+      order,
+      status,
+      paymentMethod,
+      createdAt
+    });
+  } else {
+    payment.status = status;
+  }
+
+  await this.paymentRepository.save(payment);
+
+  return { message: `Order and payment updated with status: ${status}` };
+
+  }
 
 }

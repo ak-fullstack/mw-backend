@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PaymentsService } from 'src/order/payments/payments.service';
@@ -63,44 +63,30 @@ export class RazorpayService {
     return
   }
 
-  async getRazorpayPayments(orderId: string) {
+ async getRazorpayPayments(orderId: string) {
+  try {
     const payments = await this.razorpay.orders.fetchPayments(orderId);
-    if (!payments) {
-      throw new NotFoundException('No payments found for this order')
+    if (!payments || payments.items.length === 0) {
+      throw new NotFoundException('No payments found for this order');
     }
+
     return payments;
+  } catch (error) {
+    if (error.statusCode === 404) {
+      throw new NotFoundException('Razorpay order not found'); 
+    }
+    throw new InternalServerErrorException('Failed to fetch payments from Razorpay');
   }
+}
 
   async confirmPayment(orderId: string) {
     const payments = await this.getRazorpayPayments(orderId);
-    console.log(payments);
 
+     const latestPayment = payments.items.reduce((latest, current) =>
+    current.created_at > latest.created_at ? current : latest
+  );
 
-    const successfulPayment = payments.items.find(
-      (payment) => payment.status === 'captured'
-    );
-
-    if (successfulPayment) {
-      await this.paymentsService.updateSuccessfulpaymentManually(successfulPayment);
-      return;
-    }
-
-    const failedPayments = payments.items.filter(
-      (payment) => payment.status === 'failed'
-    );
-
-      if (failedPayments.length > 0) {
-    await Promise.all(
-      failedPayments.map((payment) =>
-        this.paymentsService.updateFailedPayment(payment)
-      )
-    );
-        throw new BadRequestException('Payment failed.');
-
-  }
-
-
-    throw new BadRequestException('Order is not paid yet.');
+  return await this.paymentsService.updatePaymentStatusManually(latestPayment);
 
   }
 

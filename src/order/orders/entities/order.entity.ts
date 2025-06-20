@@ -4,27 +4,17 @@ import { Payment } from 'src/order/payments/entities/payment.entity';
 import { State } from 'src/enum/states.enum';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
+import { OrderStatus } from 'src/enum/order-status.enum';
+import { StockMovement } from 'src/inventory/stock-movements/entities/stock-movement.entity';
 
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  CONFIRMED='CONFIRMED',
-  PACKED = 'PACKED',
-  SHIPPED = 'SHIPPED',
-  CANCELLED = 'CANCELLED',
-  RETURNED = 'RETURNED',
-}
 
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Customer, customer => customer.orders, { nullable: false })
-  @JoinColumn({ name: 'customerId' })
-  customer: Customer;
-
   @Column()
-  customerId: number; // FK column to customer table
+  customerId: number;
 
   @Column({
     type: 'enum',
@@ -116,6 +106,18 @@ export class Order {
   @Column({ type: 'varchar', length: 100, nullable: true, default: 'India' })
   shippingCountry: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  packageLength: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  packageWidth: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  packageHeight: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  packageWeight: number;
+
   @Column({ type: 'timestamp', nullable: true })
   paidAt: Date;
 
@@ -125,8 +127,30 @@ export class Order {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @ManyToOne(() => Customer, customer => customer.orders, { nullable: false })
+  @JoinColumn({ name: 'customerId' })
+  customer: Customer;
+
   @OneToMany(() => Payment, payment => payment.order, { cascade: true })
   payments: Payment[];
+
+  @OneToMany(() => StockMovement, (movement) => movement.order)
+  stockMovements: StockMovement[];
+
+  @Column({ type: 'int', nullable: true })
+  replacementForOrderId: number;
+
+  @ManyToOne(() => Order, order => order.replacementOrders) // 👈 reference reverse property
+  @JoinColumn({ name: 'replacementForOrderId' })
+  originalOrder: Order;
+
+  // Reverse side: One order may have many replacements
+  @OneToMany(() => Order, order => order.originalOrder)
+  replacementOrders: Order[];
+
+  @Column({ type: 'boolean', default: false })
+  isReplacement: boolean;
+
 
   get fullBillingAddress(): string {
     const parts = [

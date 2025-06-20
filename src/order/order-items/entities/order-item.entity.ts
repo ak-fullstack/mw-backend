@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Order } from 'src/order/orders/entities/order.entity'; 
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Order } from 'src/order/orders/entities/order.entity';
 import { Stock } from 'src/inventory/stocks/entities/stock.entity';
 import { ProductVariant } from 'src/inventory/product-variants/entities/product-variant.entity';
 import { GstType } from 'src/enum/gst-types.enum';
+import { StockMovement } from 'src/inventory/stock-movements/entities/stock-movement.entity';
 
 @Entity('order_items')
 export class OrderItem {
@@ -15,7 +16,11 @@ export class OrderItem {
   @ManyToOne(() => ProductVariant, { eager: true })
   productVariant: ProductVariant;
 
-  @ManyToOne(() => Stock, { eager: true }) // optional: to track which batch this item came from
+  @Column()
+  stockId: number;
+
+  @ManyToOne(() => Stock, { eager: true })
+  @JoinColumn({ name: 'stockId' })
   stock: Stock;
 
   @Column()
@@ -40,15 +45,15 @@ export class OrderItem {
   discount: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  ctc: number; 
-  
+  ctc: number;
+
   @Column({ type: 'int', nullable: true })
   returnQuantity: number;
 
   @Column({ type: 'text', nullable: true })
   returnReason: string;
 
-   @Column({
+  @Column({
     type: 'enum',
     enum: GstType,
     nullable: false,
@@ -71,4 +76,7 @@ export class OrderItem {
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   totalAmount: number;
+
+  @OneToMany(() => StockMovement, (movement) => movement.orderItem)
+  stockMovements: StockMovement[];
 }
