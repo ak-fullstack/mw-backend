@@ -16,7 +16,7 @@ export class Payment {
   @Column({ type: 'varchar', length: 50, default: 'created' })
   status: string;
 
-  @ManyToOne(() => Order, order => order.payments)
+  @ManyToOne(() => Order, order => order.payments,{ onDelete: 'CASCADE' })
   order: Order;
 
   @Column({ type: 'varchar', length: 20, nullable: true })

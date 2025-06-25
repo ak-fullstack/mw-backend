@@ -15,4 +15,12 @@ export class StockMovementsController {
     return this.stockMovementsService.createMovements(body);
   }
 
+
+  @Get('stage-summary')
+  async getNetQuantitiesByStage() {
+    return this.stockMovementsService.getNetStockStageQuantities();
+  }
+
+  
+
 }

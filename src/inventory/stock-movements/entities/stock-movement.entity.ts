@@ -1,3 +1,4 @@
+import { IsNotEmpty } from "class-validator";
 import { StockStage } from "src/enum/stock-stages.enum";
 import { Stock } from "src/inventory/stocks/entities/stock.entity";
 import { OrderItem } from "src/order/order-items/entities/order-item.entity";
@@ -9,12 +10,9 @@ export class StockMovement {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Stock, { eager: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Stock, {  nullable: false,eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stockId' })
   stock: Stock;
-
-  @Column()
-  stockId: number;
 
   @ManyToOne(() => Order, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'orderId' })
@@ -23,9 +21,6 @@ export class StockMovement {
   @ManyToOne(() => OrderItem, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'orderItemId' })
   orderItem?: OrderItem;
-
-  @Column({ nullable: true })
-  orderItemId?: number;
 
   @Column('int')
   quantity: number;

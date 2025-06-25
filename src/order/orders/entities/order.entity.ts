@@ -110,7 +110,7 @@ export class Order {
   packageLength: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  packageWidth: number;
+  packageBreadth: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   packageHeight: number;

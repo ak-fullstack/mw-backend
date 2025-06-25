@@ -11,7 +11,7 @@ import { CustomerAddress } from 'src/customer/customer-address/entities/customer
 import { State, StateGstTypeMap } from 'src/enum/states.enum';
 import { OrderItem } from '../order-items/entities/order-item.entity';
 import { GstType } from 'src/enum/gst-types.enum';
-import { OrderStatus } from 'src/enum/order-status.enum';
+import { OrderStatus, OrderStatusPriority } from 'src/enum/order-status.enum';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { StockStage } from 'src/enum/stock-stages.enum';
 import { StockMovementsService } from 'src/inventory/stock-movements/stock-movements.service';
@@ -192,27 +192,29 @@ export class OrdersService {
     });
   }
 
-  async findAll(filters: {
-    id?: string;
-    razorpayOrderId?: string;
-    orderStatus?: string;
-    paymentStatus?: string;
-    startDate?: string;
-    endDate?: string;
-    page: number;
-    limit: number;
-  }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+ async findAll(filters: {
+  id?: string;
+  razorpayOrderId?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  startDate?: string;
+  endDate?: string;
+  page: number;
+  limit: number;
+}): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+  try {
     const where: any = {};
+
     if (filters.id) {
       where.id = filters.id;
     }
+
     if (filters.razorpayOrderId) {
       where.razorpayOrderId = filters.razorpayOrderId;
     }
 
     if (filters.orderStatus) {
       const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
-
       if (orderStatuses.length > 0) {
         where.orderStatus = In(orderStatuses);
       }
@@ -225,12 +227,10 @@ export class OrdersService {
       }
     }
 
-
     if (filters.startDate && filters.endDate) {
       const start = new Date(filters.startDate);
       const end = new Date(filters.endDate);
       end.setHours(23, 59, 59, 999);
-
       where.createdAt = Between(start, end);
     } else if (filters.startDate) {
       where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
@@ -241,6 +241,7 @@ export class OrdersService {
     }
 
     const skip = (filters.page - 1) * filters.limit;
+
     const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
       where,
       skip,
@@ -248,17 +249,22 @@ export class OrdersService {
       order: { createdAt: 'DESC' },
     });
 
-
-
     return {
-      total, page: filters.page, limit: filters.limit,
+      total,
+      page: filters.page,
+      limit: filters.limit,
       orders: orders.map(order => ({
         ...order,
         fullBillingAddress: order.fullBillingAddress,
-        fullShippingAddress: order.fullShippingAddress
-      }))
-    }
+        fullShippingAddress: order.fullShippingAddress,
+      })),
+    };
+  } catch (error) {
+    console.error('Error fetching orders with filters:', filters, '\nError:', error);
+    throw new Error('Failed to fetch orders. Please try again later.');
   }
+}
+
 
   async findById(id: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
@@ -280,19 +286,24 @@ export class OrdersService {
     return order;
   }
 
-  async findReceptionOrders(filters: {
+  async findOrdersByOrderStatus(filters: {
     id?: string;
     razorpayOrderId?: string;
     startDate?: string;
     endDate?: string;
     page: number;
     limit: number;
+    orderStatus:OrderStatus,
+    paymentStatus:PaymentStatus
   }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
     try {
       const where: any = {
-        orderStatus: OrderStatus.CONFIRMED,
-        paymentStatus: PaymentStatus.PAID,
+        orderStatus: filters.orderStatus,
+        paymentStatus: filters.paymentStatus,
       };
+
+      console.log(filters.orderStatus,filters.paymentStatus);
+      
 
       if (filters.id) {
         const idNum = parseInt(filters.id);
@@ -342,7 +353,7 @@ export class OrdersService {
     }
   }
 
-  async moveToQc(updateOrderStausDto: UpdateOrderStatusDto): Promise<any> {
+  async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto,from,to,fromOrderStatus,toOrderStatus): Promise<any> {
     const { orderId, movedBy, remarks } = updateOrderStausDto;
     return await this.dataSource.transaction(async (manager) => {
 
@@ -358,32 +369,82 @@ export class OrdersService {
         throw new BadRequestException('Order is not paid');
       }
 
-      if (order.orderStatus !== 'CONFIRMED') {
-        throw new BadRequestException('Order is not confirmed');
+      if (order.orderStatus !== fromOrderStatus) {
+        throw new BadRequestException('Order is not '+fromOrderStatus);
       }
 
-      order.orderStatus = OrderStatus.QC_CHECK;
+      order.orderStatus = toOrderStatus;
       await manager.save(order);
 
       const orderItems = await manager.find(OrderItem, {
         where: { order: { id: orderId } },
-      });
+      });      
 
       if (!orderItems || orderItems.length === 0) {
         throw new BadRequestException('No order items found');
       }
 
+      
       const movements = orderItems.map((orderItem) => ({
         stockId: orderItem.stock.id,
         orderItemId: orderItem.id,
+        orderId:orderItem.order.id,
         quantity: orderItem.quantity,
-        from: StockStage.STORAGE,
-        to: StockStage.QC_CHECK,
+        from: from,
+        to: to,
       }));
-
+            console.log(movements);
       await this.stockMovementsService.createMovements(movements, manager);
-      return {message: 'Order Successfully moved to QA_CHECK'}
+      return {message: 'Order Successfully moved to '+toOrderStatus}
     });
   }
+
+  async saveOrderDimensions(orderId: number, dims: { length: number; breadth: number; height: number; weight: number }) {
+  await this.orderRepository.update(orderId, {
+    packageLength: dims.length,
+    packageBreadth: dims.breadth,
+    packageHeight: dims.height,
+    packageWeight: dims.weight,
+  });
+}
+
+async getCustomerOrders(userId: number): Promise<any[]> {
+  const afterPendingStatuses = Object.keys(OrderStatusPriority)
+    .filter(
+      (status) =>
+        OrderStatusPriority[status as OrderStatus] > OrderStatusPriority[OrderStatus.PENDING]
+    ) as OrderStatus[];
+
+  const orders= await this.orderRepository.find({
+    where: {
+      customer: { id: userId },
+      orderStatus: In(afterPendingStatuses),
+    },
+    relations: ['items.productVariant.product','items.productVariant.images'],
+    order: { createdAt: 'DESC' },
+  });
+
+   return orders.map(order => {
+  const items = order.items.map(item => ({
+    productName: item.productVariant?.product?.name,
+    quantityBought: item.quantity,
+    itemTotal: item.totalAmount,
+    imageUrl: item.productVariant?.images[0]?.imageUrl,
+  }));
+
+  const itemCount = items.reduce((sum, item) => sum + item.quantityBought, 0);
+
+  return {
+    orderId: order.id,
+    orderStatus: order.orderStatus,
+    totalAmount: order.totalAmount,
+     shippingAddress: `${order.shippingName}, ${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingState}, ${order.shippingCountry}, ${order.shippingPincode}, ${order.shippingPhoneNumber}`,
+  billingAddress: `${order.billingName}, ${order.billingStreetAddress}, ${order.billingCity}, ${order.billingState}, ${order.billingCountry}, ${order.billingPincode}, ${order.billingPhoneNumber}`,
+    createdAt: order.createdAt,
+    itemCount,
+    items,
+  };
+});
+}
 
 }

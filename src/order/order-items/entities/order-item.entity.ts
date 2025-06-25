@@ -10,14 +10,14 @@ export class OrderItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Order, order => order.items, { onDelete: 'CASCADE' })
-  order: Order;
+  @ManyToOne(() => Order, order => order.items, {
+  onDelete: 'CASCADE',eager: true
+})
+@JoinColumn({ name: 'orderId' }) // 👈 custom FK column name
+order: Order;
 
   @ManyToOne(() => ProductVariant, { eager: true })
   productVariant: ProductVariant;
-
-  @Column()
-  stockId: number;
 
   @ManyToOne(() => Stock, { eager: true })
   @JoinColumn({ name: 'stockId' })

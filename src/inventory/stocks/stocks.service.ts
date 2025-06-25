@@ -37,6 +37,8 @@ export class StocksService {
 
     const savedPurchase = await manager.save(StockPurchase, purchase);
 
+   
+
     const stockEntities = createStockdto.variants.map((v: any) => {
       const stock = new Stock();
       stock.purchase = savedPurchase;
@@ -60,7 +62,7 @@ export class StocksService {
     });
 
     const savedStocks = await manager.save(Stock, stockEntities);
-
+   
     const movements = savedStocks.map((stock) => ({
       stockId: stock.id,
       quantity: stock.quantity,
