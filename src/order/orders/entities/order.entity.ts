@@ -6,6 +6,7 @@ import { Customer } from 'src/customer/entities/customer.entity';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { OrderStatus } from 'src/enum/order-status.enum';
 import { StockMovement } from 'src/inventory/stock-movements/entities/stock-movement.entity';
+import { Return } from 'src/order/returns/entities/return.entity';
 
 
 @Entity('orders')
@@ -150,6 +151,15 @@ export class Order {
 
   @Column({ type: 'boolean', default: false })
   isReplacement: boolean;
+
+  @Column({ default: false })
+  hasReturn: boolean;
+
+  @OneToMany(() => Return, (returnRequest) => returnRequest.order)
+  returns: Return[];
+
+  @Column({ type: 'datetime', nullable: true })
+  deliveryDate: Date;
 
 
   get fullBillingAddress(): string {

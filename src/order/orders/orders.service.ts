@@ -4,7 +4,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { RazorpayService } from 'src/razorpay/razorpay.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
-import { Between, DataSource, In, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, DataSource, EntityManager, In, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Stock } from 'src/inventory/stocks/entities/stock.entity';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { CustomerAddress } from 'src/customer/customer-address/entities/customer-address.entity';
@@ -36,94 +36,103 @@ export class OrdersService {
   ) { }
 
   async create(createOrderDto: CreateOrderDto, customerId: number): Promise<any> {
+    return await this.dataSource.transaction(async (manager) => {
+      const customer = await this.customerRepository.findOne({ where: { id: customerId } });
 
-    const customer = await this.customerRepository.findOne({ where: { id: customerId } });
 
+      if (!customer) {
 
-    if (!customer) {
-
-      throw new UnauthorizedException('Customer not found');
-    }
-
-    if (!customer.phoneNumber) {
-      customer.phoneNumber = createOrderDto.shippingPhoneNumber;
-      await this.customerRepository.save(customer);
-    }
-
-    const shippingAddress = await this.customerAddressRepository.findOne({
-      where: { id: createOrderDto.shippingAddressId, customerId }
-    });
-    if (!shippingAddress) {
-      throw new BadRequestException('Shipping address does not belong to the customer');
-    }
-
-    const billingAddress = await this.customerAddressRepository.findOne({
-      where: { id: createOrderDto.billingAddressId, customerId }
-    });
-    if (!billingAddress) {
-      throw new BadRequestException('Billing address does not belong to the customer');
-    }
-
-    if (createOrderDto.billingSameAsShipping) {
-      if (createOrderDto.billingAddressId !== createOrderDto.shippingAddressId) {
-        throw new BadRequestException('Billing and shipping address IDs must be same when billingSameAsShipping is true');
+        throw new UnauthorizedException('Customer not found');
       }
-    } else {
-      if (createOrderDto.billingAddressId === createOrderDto.shippingAddressId) {
-        throw new BadRequestException('Billing and shipping address IDs must be different when billingSameAsShipping is false');
+
+      if (!customer.phoneNumber) {
+        customer.phoneNumber = createOrderDto.shippingPhoneNumber;
+        await this.customerRepository.save(customer);
       }
-    }
 
-    const order = new Order();
-    order.customerId = customerId;
-    order.billingName = customer.fullName;
-    order.billingPhoneNumber = customer.phoneNumber;
-    order.billingEmailId = customer.emailId;
-    order.billingStreetAddress = billingAddress.streetAddress;
-    order.billingCity = billingAddress.city;
-    order.billingState = billingAddress.state;
-    order.billingPincode = billingAddress.pincode;
-    order.billingCountry = billingAddress.country || 'India';
-    order.shippingName = createOrderDto.shippingName;
-    order.shippingPhoneNumber = createOrderDto.shippingPhoneNumber;
-    order.shippingEmailId = createOrderDto.shippingEmailId;
-    order.shippingStreetAddress = shippingAddress.streetAddress;
-    order.shippingCity = shippingAddress.city;
-    order.shippingState = shippingAddress.state;
-    order.shippingPincode = shippingAddress.pincode;
-    order.shippingCountry = shippingAddress.country || 'India';
+      const shippingAddress = await this.customerAddressRepository.findOne({
+        where: { id: createOrderDto.shippingAddressId, customerId }
+      });
+      if (!shippingAddress) {
+        throw new BadRequestException('Shipping address does not belong to the customer');
+      }
 
-    const calculationResult = await this.calculateOrder(createOrderDto.items, shippingAddress.state);
-    const { subTotal, totalAmount, totalTax, totalDiscount, orderItems } = calculationResult;
-    order.subTotal = subTotal;
-    order.totalTax = totalTax;
-    order.totalAmount = totalAmount;
-    order.totalDiscount = totalDiscount
-    order.orderStatus = OrderStatus.PENDING;
-    order.items = orderItems;
+      const billingAddress = await this.customerAddressRepository.findOne({
+        where: { id: createOrderDto.billingAddressId, customerId }
+      });
+      if (!billingAddress) {
+        throw new BadRequestException('Billing address does not belong to the customer');
+      }
 
-    const razorPayOrderDetails = await this.razorpayService.createOrder(order.totalAmount);
+      if (createOrderDto.billingSameAsShipping) {
+        if (createOrderDto.billingAddressId !== createOrderDto.shippingAddressId) {
+          throw new BadRequestException('Billing and shipping address IDs must be same when billingSameAsShipping is true');
+        }
+      } else {
+        if (createOrderDto.billingAddressId === createOrderDto.shippingAddressId) {
+          throw new BadRequestException('Billing and shipping address IDs must be different when billingSameAsShipping is false');
+        }
+      }
 
-    console.log(razorPayOrderDetails);
+      const order = new Order();
+      order.customerId = customerId;
+      order.billingName = customer.fullName;
+      order.billingPhoneNumber = customer.phoneNumber;
+      order.billingEmailId = customer.emailId;
+      order.billingStreetAddress = billingAddress.streetAddress;
+      order.billingCity = billingAddress.city;
+      order.billingState = billingAddress.state;
+      order.billingPincode = billingAddress.pincode;
+      order.billingCountry = billingAddress.country || 'India';
+      order.shippingName = createOrderDto.shippingName;
+      order.shippingPhoneNumber = createOrderDto.shippingPhoneNumber;
+      order.shippingEmailId = createOrderDto.shippingEmailId;
+      order.shippingStreetAddress = shippingAddress.streetAddress;
+      order.shippingCity = shippingAddress.city;
+      order.shippingState = shippingAddress.state;
+      order.shippingPincode = shippingAddress.pincode;
+      order.shippingCountry = shippingAddress.country || 'India';
 
-    order.razorpayOrderId = razorPayOrderDetails.id;
+      const calculationResult = await this.calculateOrder(createOrderDto.items, shippingAddress.state,manager);
+      const { subTotal, totalAmount, totalTax, totalDiscount, orderItems } = calculationResult;
+      order.subTotal = subTotal;
+      order.totalTax = totalTax;
+      order.totalAmount = totalAmount;
+      order.totalDiscount = totalDiscount
+      order.orderStatus = OrderStatus.PENDING;
+      order.items = orderItems;
 
-    await this.dataSource.transaction(async manager => {
+      const razorPayOrderDetails = await this.razorpayService.createOrder(order.totalAmount);
+      order.razorpayOrderId = razorPayOrderDetails.id;
       const savedOrder = await manager.save(Order, order);
+      const savedOrderItems: OrderItem[] = [];
       for (const item of orderItems) {
         item.order = savedOrder;
-        await manager.save(OrderItem, item);
+        const savedItem = await manager.save(OrderItem, item);
+        savedOrderItems.push(savedItem);
       }
-    });
+      const movements = savedOrderItems.map(orderItem => ({
+        stockId: orderItem.stock.id,
+        orderItemId: orderItem.id,
+        orderId: savedOrder.id,
+        quantity: orderItem.quantity,
+        from: StockStage.AVAILABLE,
+        to: StockStage.RESERVED,
+      }));
+      await this.stockMovementsService.createMovements(movements, manager);
 
-    return { razorpayOrderId: razorPayOrderDetails.id, name: order.billingName, email: order.billingEmailId, contact: order.billingPhoneNumber }
+
+
+
+      return { razorpayOrderId: razorPayOrderDetails.id, name: order.billingName, email: order.billingEmailId, contact: order.billingPhoneNumber }
+    });
   }
 
   private async calculateOrder(
     items: OrderItemDto[],
-    shippingState: State
+    shippingState: State,
+     manager: EntityManager
   ): Promise<{ orderItems: OrderItem[]; subTotal: number; totalTax: number; totalAmount: number; totalDiscount: number }> {
-    return await this.dataSource.transaction(async (manager) => {
       const orderItems: OrderItem[] = [];
       let subTotal = 0;
       let totalTax = 0;
@@ -146,13 +155,10 @@ export class OrdersService {
           throw new BadRequestException(`Stock ID ${item.stockId} is not available for sale`);
         }
 
-        if (stock.available < item.quantity) {
+        const available = await this.stockMovementsService.getNetQuantityForStockAndStage(item.stockId, StockStage.AVAILABLE);
+        if (available < item.quantity) {
           throw new BadRequestException(`Insufficient stock for stock ID ${item.stockId}`);
         }
-
-        // Reserve stock within transaction
-        stock.reserved += item.quantity;
-        await manager.save(stock);
 
         const orderItem = new OrderItem();
         orderItem.stock = stock;
@@ -189,81 +195,80 @@ export class OrdersService {
         totalAmount,
         totalDiscount,
       };
-    });
   }
 
- async findAll(filters: {
-  id?: string;
-  razorpayOrderId?: string;
-  orderStatus?: string;
-  paymentStatus?: string;
-  startDate?: string;
-  endDate?: string;
-  page: number;
-  limit: number;
-}): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
-  try {
-    const where: any = {};
+  async findAll(filters: {
+    id?: string;
+    razorpayOrderId?: string;
+    orderStatus?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
+    try {
+      const where: any = {};
 
-    if (filters.id) {
-      where.id = filters.id;
-    }
-
-    if (filters.razorpayOrderId) {
-      where.razorpayOrderId = filters.razorpayOrderId;
-    }
-
-    if (filters.orderStatus) {
-      const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
-      if (orderStatuses.length > 0) {
-        where.orderStatus = In(orderStatuses);
+      if (filters.id) {
+        where.id = filters.id;
       }
-    }
 
-    if (filters.paymentStatus) {
-      const paymentStatuses = filters.paymentStatus.split(',').map(s => s.trim());
-      if (paymentStatuses.length > 0) {
-        where.paymentStatus = In(paymentStatuses);
+      if (filters.razorpayOrderId) {
+        where.razorpayOrderId = filters.razorpayOrderId;
       }
+
+      if (filters.orderStatus) {
+        const orderStatuses = filters.orderStatus.split(',').map(s => s.trim());
+        if (orderStatuses.length > 0) {
+          where.orderStatus = In(orderStatuses);
+        }
+      }
+
+      if (filters.paymentStatus) {
+        const paymentStatuses = filters.paymentStatus.split(',').map(s => s.trim());
+        if (paymentStatuses.length > 0) {
+          where.paymentStatus = In(paymentStatuses);
+        }
+      }
+
+      if (filters.startDate && filters.endDate) {
+        const start = new Date(filters.startDate);
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = Between(start, end);
+      } else if (filters.startDate) {
+        where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
+      } else if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt = LessThanOrEqual(end);
+      }
+
+      const skip = (filters.page - 1) * filters.limit;
+
+      const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
+        where,
+        skip,
+        take: filters.limit,
+        order: { createdAt: 'DESC' },
+      });
+
+      return {
+        total,
+        page: filters.page,
+        limit: filters.limit,
+        orders: orders.map(order => ({
+          ...order,
+          fullBillingAddress: order.fullBillingAddress,
+          fullShippingAddress: order.fullShippingAddress,
+        })),
+      };
+    } catch (error) {
+      console.error('Error fetching orders with filters:', filters, '\nError:', error);
+      throw new Error('Failed to fetch orders. Please try again later.');
     }
-
-    if (filters.startDate && filters.endDate) {
-      const start = new Date(filters.startDate);
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      where.createdAt = Between(start, end);
-    } else if (filters.startDate) {
-      where.createdAt = MoreThanOrEqual(new Date(filters.startDate));
-    } else if (filters.endDate) {
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      where.createdAt = LessThanOrEqual(end);
-    }
-
-    const skip = (filters.page - 1) * filters.limit;
-
-    const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
-      where,
-      skip,
-      take: filters.limit,
-      order: { createdAt: 'DESC' },
-    });
-
-    return {
-      total,
-      page: filters.page,
-      limit: filters.limit,
-      orders: orders.map(order => ({
-        ...order,
-        fullBillingAddress: order.fullBillingAddress,
-        fullShippingAddress: order.fullShippingAddress,
-      })),
-    };
-  } catch (error) {
-    console.error('Error fetching orders with filters:', filters, '\nError:', error);
-    throw new Error('Failed to fetch orders. Please try again later.');
   }
-}
 
 
   async findById(id: number): Promise<Order> {
@@ -293,8 +298,8 @@ export class OrdersService {
     endDate?: string;
     page: number;
     limit: number;
-    orderStatus:OrderStatus,
-    paymentStatus:PaymentStatus
+    orderStatus: OrderStatus,
+    paymentStatus: PaymentStatus
   }): Promise<{ total: number; page: number; limit: number; orders: any[] }> {
     try {
       const where: any = {
@@ -302,8 +307,6 @@ export class OrdersService {
         paymentStatus: filters.paymentStatus,
       };
 
-      console.log(filters.orderStatus,filters.paymentStatus);
-      
 
       if (filters.id) {
         const idNum = parseInt(filters.id);
@@ -353,7 +356,7 @@ export class OrdersService {
     }
   }
 
-  async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto,from,to,fromOrderStatus,toOrderStatus): Promise<any> {
+  async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto, from, to, fromOrderStatus, toOrderStatus): Promise<any> {
     const { orderId, movedBy, remarks } = updateOrderStausDto;
     return await this.dataSource.transaction(async (manager) => {
 
@@ -370,81 +373,86 @@ export class OrdersService {
       }
 
       if (order.orderStatus !== fromOrderStatus) {
-        throw new BadRequestException('Order is not '+fromOrderStatus);
+        throw new BadRequestException('Order is not ' + fromOrderStatus);
       }
 
       order.orderStatus = toOrderStatus;
+      if (toOrderStatus === OrderStatus.DELIVERED) {
+        order.deliveryDate = new Date()
+      }
       await manager.save(order);
 
       const orderItems = await manager.find(OrderItem, {
         where: { order: { id: orderId } },
-      });      
+      });
 
       if (!orderItems || orderItems.length === 0) {
         throw new BadRequestException('No order items found');
       }
 
-      
+
       const movements = orderItems.map((orderItem) => ({
         stockId: orderItem.stock.id,
         orderItemId: orderItem.id,
-        orderId:orderItem.order.id,
+        orderId: orderItem.order.id,
         quantity: orderItem.quantity,
         from: from,
         to: to,
       }));
-            console.log(movements);
       await this.stockMovementsService.createMovements(movements, manager);
-      return {message: 'Order Successfully moved to '+toOrderStatus}
+      return { message: 'Order Successfully moved to ' + toOrderStatus }
     });
   }
 
   async saveOrderDimensions(orderId: number, dims: { length: number; breadth: number; height: number; weight: number }) {
-  await this.orderRepository.update(orderId, {
-    packageLength: dims.length,
-    packageBreadth: dims.breadth,
-    packageHeight: dims.height,
-    packageWeight: dims.weight,
-  });
-}
+    await this.orderRepository.update(orderId, {
+      packageLength: dims.length,
+      packageBreadth: dims.breadth,
+      packageHeight: dims.height,
+      packageWeight: dims.weight,
+    });
+  }
 
-async getCustomerOrders(userId: number): Promise<any[]> {
-  const afterPendingStatuses = Object.keys(OrderStatusPriority)
-    .filter(
-      (status) =>
-        OrderStatusPriority[status as OrderStatus] > OrderStatusPriority[OrderStatus.PENDING]
-    ) as OrderStatus[];
+  async getCustomerOrders(userId: number): Promise<any[]> {
+    const afterPendingStatuses = Object.keys(OrderStatusPriority)
+      .filter(
+        (status) =>
+          OrderStatusPriority[status as OrderStatus] > OrderStatusPriority[OrderStatus.PENDING]
+      ) as OrderStatus[];
 
-  const orders= await this.orderRepository.find({
-    where: {
-      customer: { id: userId },
-      orderStatus: In(afterPendingStatuses),
-    },
-    relations: ['items.productVariant.product','items.productVariant.images'],
-    order: { createdAt: 'DESC' },
-  });
+    const orders = await this.orderRepository.find({
+      where: {
+        customer: { id: userId },
+        orderStatus: In(afterPendingStatuses),
+      },
+      relations: ['items.productVariant.product', 'items.productVariant.images'],
+      order: { createdAt: 'DESC' },
+    });
 
-   return orders.map(order => {
-  const items = order.items.map(item => ({
-    productName: item.productVariant?.product?.name,
-    quantityBought: item.quantity,
-    itemTotal: item.totalAmount,
-    imageUrl: item.productVariant?.images[0]?.imageUrl,
-  }));
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantityBought, 0);
+    return orders.map(order => {
+      const items = order.items.map(item => ({
+        productName: item.productVariant?.product?.name,
+        quantity: item.quantity,
+        itemTotal: item.totalAmount,
+        imageUrl: item.productVariant?.images[0]?.imageUrl,
+        orderItemId: item.id
+      }));
 
-  return {
-    orderId: order.id,
-    orderStatus: order.orderStatus,
-    totalAmount: order.totalAmount,
-     shippingAddress: `${order.shippingName}, ${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingState}, ${order.shippingCountry}, ${order.shippingPincode}, ${order.shippingPhoneNumber}`,
-  billingAddress: `${order.billingName}, ${order.billingStreetAddress}, ${order.billingCity}, ${order.billingState}, ${order.billingCountry}, ${order.billingPincode}, ${order.billingPhoneNumber}`,
-    createdAt: order.createdAt,
-    itemCount,
-    items,
-  };
-});
-}
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+      return {
+        orderId: order.id,
+        orderStatus: order.orderStatus,
+        totalAmount: order.totalAmount,
+        shippingAddress: `${order.shippingName}, ${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingState}, ${order.shippingCountry}, ${order.shippingPincode}, ${order.shippingPhoneNumber}`,
+        billingAddress: `${order.billingName}, ${order.billingStreetAddress}, ${order.billingCity}, ${order.billingState}, ${order.billingCountry}, ${order.billingPincode}, ${order.billingPhoneNumber}`,
+        createdAt: order.createdAt,
+        paymentMethod: order.paymentMethod,
+        itemCount,
+        items,
+      };
+    });
+  }
 
 }

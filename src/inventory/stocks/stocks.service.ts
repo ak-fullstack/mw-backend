@@ -51,13 +51,12 @@ export class StocksService {
       stock.cgst = v.cgst;
       stock.sgst = v.sgst;
       stock.igst = v.igst;
-      stock.used = 0;
       stock.igstAmount = v.igstAmount;
       stock.cgstAmount = v.cgstAmount;
       stock.sgstAmount = v.sgstAmount;
       stock.subTotal = v.subTotal;
       stock.totalTax = v.totalTax;
-      stock.totalAmount = v.totalAmount;
+      stock.totalAmount = v.totalAmount; 
       return stock;
     });
 
@@ -67,7 +66,7 @@ export class StocksService {
       stockId: stock.id,
       quantity: stock.quantity,
       from: StockStage.SUPPLIER,
-      to: StockStage.STORAGE,
+      to: StockStage.AVAILABLE,
     }));
 
     await this.stockMovementsService.createMovements(movements, manager);
@@ -109,8 +108,6 @@ export class StocksService {
             purchaseDate: true,
           },
           quantity: true,
-          used: true,
-          reserved: true,
         }, where: { onSale: true }
       });
 
@@ -129,14 +126,25 @@ export class StocksService {
         }
       }
 
-      // Final result: array of latest stocks
       const latestStocks = Array.from(latestStocksMap.values());
 
-      // Optional: Add available stock calculation
-      return latestStocks.map(stock => ({
-        ...stock,
-        available: (stock.quantity ?? 0) - (stock.used ?? 0) - (stock.reserved ?? 0),
-      }));
+      const enrichedStocks = await Promise.all(
+      latestStocks.map(async (stock) => {
+        const available = await this.stockMovementsService.getNetQuantityForStockAndStage(stock.id, StockStage.AVAILABLE);
+        
+        return {
+          ...stock,
+          available,
+        };
+      })
+    );
+
+    return enrichedStocks;
+
+      // return latestStocks.map(stock => ({
+      //   ...stock,
+      //   available: (stock.quantity ?? 0) - (stock.used ?? 0) - (stock.reserved ?? 0),
+      // }));
     } catch (error) {
       console.error('Error fetching stocks:', error);
       throw new InternalServerErrorException('Failed to fetch stocks');
@@ -166,7 +174,6 @@ export class StocksService {
         sgst: stock.sgst,
         igst: stock.igst,
         quantity: request.quantity,
-        available: stock.available,
         sp: stock.sp,
         mrp: stock.mrp,
         discount: stock.discount,

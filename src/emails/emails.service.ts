@@ -34,8 +34,7 @@ export class EmailsService {
 
 
   async sendOtpMail(emailId:string,code:string): Promise<void> {
-    console.log('hola');
-    
+
     const mailOptions = {
       from: this.configService.get<string>('GOOGLE_MAILER'),
       to: emailId,

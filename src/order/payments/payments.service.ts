@@ -10,7 +10,6 @@ import { OrderStatus } from 'src/enum/order-status.enum';
 export class PaymentsService {
 
   constructor(
-    private readonly dataSource: DataSource,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Order)
@@ -26,8 +25,6 @@ export class PaymentsService {
     const event = payload.event;
     const paymentMethod = payload.payload.payment.entity.method;
     const createdAt = new Date(payload.payload.payment.entity.created_at * 1000);
-
-
     const order = await this.orderRepository.findOne({ where: { razorpayOrderId } });
     if (!order) throw new Error('Order not found');
 
@@ -36,9 +33,10 @@ export class PaymentsService {
       order.paymentStatus = PaymentStatus.FAILED;
       order.orderStatus = OrderStatus.CANCELLED;
     } else if (event === 'payment.captured') {
-      order.paymentStatus = PaymentStatus.PAID;
+      order.paymentStatus = PaymentStatus.PAID; 
       order.orderStatus = OrderStatus.CONFIRMED;
       order.successfulPaymentId = razorpayPaymentId;
+      order.paymentMethod=paymentMethod;
     } else {
       order.paymentStatus = PaymentStatus.PENDING;
     }
@@ -60,8 +58,8 @@ export class PaymentsService {
     } else {
       payment.status = payload.payload.payment.entity.status;
     }
-
     await this.paymentRepository.save(payment);
+    
   }
 
   async updatePaymentStatusManually(latestPayment:any){
@@ -81,6 +79,8 @@ export class PaymentsService {
     order.paymentStatus = PaymentStatus.PAID;
     order.orderStatus = OrderStatus.CONFIRMED;
     order.successfulPaymentId = razorpayPaymentId;
+    order.paymentMethod=paymentMethod;
+
   } else if (status === 'failed') {
     order.paymentStatus = PaymentStatus.FAILED;
     order.orderStatus = OrderStatus.CANCELLED;
@@ -112,5 +112,6 @@ export class PaymentsService {
   return { message: `Order and payment updated with status: ${status}` };
 
   }
+
 
 }

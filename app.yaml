@@ -1,5 +1,7 @@
 runtime: nodejs22
-entrypoint: node dist/src/main.js
+entrypoint: npm run start:prod
+
+# entrypoint: node dist/src/main.js
 
 handlers:
   - url: /.*
@@ -7,7 +9,7 @@ handlers:
     secure: always
     
 env_variables:
-  NODE_ENV: 'development'
+  NODE_ENV: 'production'
 
   # MySQL Database Config
   DB_HOST: 'freetier-dev.cpea4uou83v5.ap-south-1.rds.amazonaws.com'

@@ -105,8 +105,8 @@ async getCustomerOrders(@Req() req): Promise<any> {
 
 
   @Patch('move-to-qc')
-  moveFromStorageToQc(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
-    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.STORAGE, StockStage.QC_CHECK,OrderStatus.CONFIRMED, OrderStatus.QC_CHECK);
+  moveFromReservedToQc(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
+    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.RESERVED, StockStage.QC_CHECK,OrderStatus.CONFIRMED, OrderStatus.QC_CHECK);
   }
 
 
@@ -126,7 +126,7 @@ async getCustomerOrders(@Req() req): Promise<any> {
     return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.WAITING_PICKUP, StockStage.SHIPPED,OrderStatus.WAITING_PICKUP, OrderStatus.SHIPPED);
   }
 
-   @Patch('deliver-order')
+  @Patch('deliver-order')
   deliverOrder(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
     return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.SHIPPED, StockStage.DELIVERED,OrderStatus.SHIPPED, OrderStatus.DELIVERED);
   }

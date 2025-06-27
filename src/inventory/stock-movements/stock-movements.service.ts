@@ -114,6 +114,30 @@ export class StockMovementsService {
     }
   }
 
+  async getNetQuantityForStockAndStage(stockId: number, stage: StockStage): Promise<number> {
+  const result = await this.stockMovementRepo.query(
+    `
+    SELECT SUM(combined.net_quantity) AS totalQuantity
+    FROM (
+      -- INCOMING (to the stage)
+      SELECT quantity AS net_quantity
+      FROM stock_movements
+      WHERE stockId = ? AND \`to\` = ?
+
+      UNION ALL
+
+      -- OUTGOING (from the stage)
+      SELECT -quantity AS net_quantity
+      FROM stock_movements
+      WHERE stockId = ? AND \`from\` = ?
+    ) AS combined
+  `,
+    [stockId, stage, stockId, stage]
+  );
+
+  return Number(result[0]?.totalQuantity ?? 0);
+}
+
 
 
 

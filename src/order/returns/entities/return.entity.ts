@@ -7,26 +7,32 @@ import {
     OneToMany,
     JoinColumn,
 } from 'typeorm';
-import { Order } from 'src/order/orders/entities/order.entity'; 
-import { ReturnItem } from 'src/order/return-items/entities/return-item.entity'; 
+import { Order } from 'src/order/orders/entities/order.entity';
+import { ReturnItem } from 'src/order/return-items/entities/return-item.entity';
+import { ReturnType } from 'src/enum/return-type.enum';
+import { ReturnStatus } from 'src/enum/return-status.enum';
 
 @Entity('returns')
 export class Return {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Order)
+    @ManyToOne(() => Order, { nullable: false })
     @JoinColumn({ name: 'orderId' })
     order: Order;
-
-    @Column()
-    orderId: number;
 
     @Column({ type: 'text', nullable: true })
     reason: string;
 
-    @Column({ type: 'enum', enum: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'], default: 'PENDING' })
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+    @Column({ type: 'enum', enum: ReturnStatus, default: ReturnStatus.PENDING })
+    retrunStatus: ReturnStatus;
+
+    @Column({
+        type: 'enum',
+        enum: ReturnType,
+        default: ReturnType.REPLACEMENT,
+    })
+    returnType: ReturnType; 
 
     @OneToMany(() => ReturnItem, item => item.returnRequest, { cascade: true })
     items: ReturnItem[];

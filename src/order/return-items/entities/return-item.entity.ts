@@ -17,15 +17,9 @@ export class ReturnItem {
   @JoinColumn({ name: 'returnId' })
   returnRequest: Return;
 
-  @Column()
-  returnId: number;
-
   @ManyToOne(() => OrderItem)
   @JoinColumn({ name: 'orderItemId' })
   orderItem: OrderItem;
-
-  @Column()
-  orderItemId: number;
 
   @Column({ type: 'int' })
   quantity: number;

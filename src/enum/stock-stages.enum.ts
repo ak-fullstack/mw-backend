@@ -1,6 +1,7 @@
 export enum StockStage {
   SUPPLIER = 'supplier',
-  STORAGE = 'storage',
+  AVAILABLE = 'available',
+  RESERVED='reserved',
   QC_CHECK = 'qc_check',
   WAITING_PICKUP = 'waiting_pickup',
   SHIPPED='shipped',
@@ -10,3 +11,8 @@ export enum StockStage {
   DAMAGED = 'damaged',
   SOLD = 'sold',
 }
+
+export const STORAGE: StockStage[] = [
+  StockStage.AVAILABLE,
+  StockStage.RESERVED,
+];

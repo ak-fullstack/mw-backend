@@ -21,9 +21,6 @@ export class Stock {
   @Column()
   quantity: number;
 
-  @Column({ default: 0 })
-  used: number;
-
   @Column('decimal', { precision: 10, scale: 2, transformer: DecimalToNumber })
   sp: number;
 
@@ -47,9 +44,6 @@ export class Stock {
 
   @Column('decimal', { precision: 10, scale: 2, transformer: DecimalToNumber })
   ctc: number;
-
-  @Column({ default: 0 })
-  reserved: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: DecimalToNumber })
   subTotal: number;
@@ -78,7 +72,7 @@ export class Stock {
   @OneToMany(() => StockMovement, (movement) => movement.stock)
   stockMovements: StockMovement[];
 
-  get available(): number {
-    return this.quantity - this.used - this.reserved;
-  }
+  // get available(): number {
+  //   return this.quantity - this.used - this.reserved;
+  // }
 }

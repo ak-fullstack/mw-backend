@@ -1,34 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from '@nestjs/common';
 import { ReturnsService } from './returns.service';
 import { CreateReturnDto } from './dto/create-return.dto';
 import { UpdateReturnDto } from './dto/update-return.dto';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Role } from 'src/roles/role/entities/role.entity';
+import { Roles } from 'src/decorators/roles.decorator';
 
 @Controller('returns')
 export class ReturnsController {
   constructor(private readonly returnsService: ReturnsService) {}
 
-  @Post()
-  create(@Body() createReturnDto: CreateReturnDto) {
-    return this.returnsService.create(createReturnDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.returnsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.returnsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReturnDto: UpdateReturnDto) {
-    return this.returnsService.update(+id, updateReturnDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.returnsService.remove(+id);
-  }
+  @Post('request-return')
+  @UseGuards(JwtAuthGuard,RolesGuard)
+  @Roles('FAM_MEMBER')
+async createReturn(@Req() req, @Body() createReturnDto: CreateReturnDto) {
+  const customerId = req.user?.userId; // assuming JWT has user.id
+  return this.returnsService.create(createReturnDto, customerId);
+}
 }

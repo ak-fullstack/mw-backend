@@ -11,10 +11,11 @@ import { CustomerAddress } from 'src/customer/customer-address/entities/customer
 import { RazorpayModule } from 'src/razorpay/razorpay.module';
 import { QrCodeModule } from 'src/qr-code/qr-code.module';
 import { StockMovementsModule } from 'src/inventory/stock-movements/stock-movements.module';
+import { Return } from '../returns/entities/return.entity';
 
 @Module({
   controllers: [OrdersController],
   providers: [OrdersService],
-imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress]),RazorpayModule,QrCodeModule,StockMovementsModule]
+imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress,Return]),RazorpayModule,QrCodeModule,StockMovementsModule]
 })
 export class OrdersModule {}
