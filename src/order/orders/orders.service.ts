@@ -378,7 +378,7 @@ export class OrdersService {
 
       order.orderStatus = toOrderStatus;
       if (toOrderStatus === OrderStatus.DELIVERED) {
-        order.deliveryDate = new Date()
+        order.deliveredAt = new Date()
       }
       await manager.save(order);
 
@@ -413,7 +413,7 @@ export class OrdersService {
     });
   }
 
-  async getCustomerOrders(userId: number): Promise<any[]> {
+  async getCustomerOrders(userId: any): Promise<any[]> {
     const afterPendingStatuses = Object.keys(OrderStatusPriority)
       .filter(
         (status) =>

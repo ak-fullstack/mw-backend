@@ -9,6 +9,6 @@ import { ReturnItem } from '../return-items/entities/return-item.entity';
 @Module({
   controllers: [ReturnsController],
   providers: [ReturnsService],
-  imports:[TypeOrmModule.forFeature([ReturnItem])]
+  imports:[TypeOrmModule.forFeature([ReturnItem,Return])]
 })
 export class ReturnsModule {}

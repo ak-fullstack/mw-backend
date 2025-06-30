@@ -159,7 +159,7 @@ export class Order {
   returns: Return[];
 
   @Column({ type: 'datetime', nullable: true })
-  deliveryDate: Date;
+  deliveredAt: Date;
 
 
   get fullBillingAddress(): string {

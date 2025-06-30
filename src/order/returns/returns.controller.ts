@@ -9,13 +9,21 @@ import { Roles } from 'src/decorators/roles.decorator';
 
 @Controller('returns')
 export class ReturnsController {
-  constructor(private readonly returnsService: ReturnsService) {}
+  constructor(private readonly returnsService: ReturnsService) { }
 
+  @Get('get-all-returns')
+  async getAllReturns() {
+    console.log('asdkuahd');
+    return await this.returnsService.getAllReturns();
+  }
+  
   @Post('request-return')
-  @UseGuards(JwtAuthGuard,RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('FAM_MEMBER')
-async createReturn(@Req() req, @Body() createReturnDto: CreateReturnDto) {
-  const customerId = req.user?.userId; // assuming JWT has user.id
-  return this.returnsService.create(createReturnDto, customerId);
-}
+  async createReturn(@Req() req, @Body() createReturnDto: CreateReturnDto) {
+    const customerId = req.user?.userId; // assuming JWT has user.id
+    return this.returnsService.create(createReturnDto, customerId);
+  }
+
+  
 }

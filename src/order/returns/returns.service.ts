@@ -1,18 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateReturnDto } from './dto/create-return.dto';
 import { UpdateReturnDto } from './dto/update-return.dto';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Order } from '../orders/entities/order.entity';
 import { OrderItem } from '../order-items/entities/order-item.entity';
 import { OrderStatus } from 'src/enum/order-status.enum';
 import { ReturnItem } from '../return-items/entities/return-item.entity';
 import { Return } from './entities/return.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ReturnsService {
 
 
-  constructor(private dataSource: DataSource) {
+  constructor(private dataSource: DataSource,
+    @InjectRepository(Return)
+      private readonly returnRepository: Repository<Return>,
+  ) {
 
   }
 
@@ -37,6 +41,13 @@ export class ReturnsService {
 
       if (existingReturn) {
         throw new BadRequestException('A return request already exists for this order');
+      }
+      const deliveryDate = new Date(order.deliveredAt);
+      const today = new Date();
+      const diffInDays = (today.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (diffInDays > 7) {
+        throw new BadRequestException('Return request is allowed only within 7 days of delivery');
       }
 
       const orderItems = await manager.find(OrderItem, {
@@ -73,6 +84,8 @@ export class ReturnsService {
         }
       }
 
+      order.hasReturn = true;
+      await manager.save(Order, order)
       const returnRequest = manager.create(Return, {
         order,
         reason: createReturnDto.reason,
@@ -97,6 +110,14 @@ export class ReturnsService {
     });
 
 
+  }
+
+
+  async getAllReturns(): Promise<any> {
+    return this.returnRepository.find({
+      relations: ['items'],
+      order: { createdAt: 'DESC' }
+    });
   }
 
 }
