@@ -153,20 +153,29 @@ export class StocksService {
 
 
 
-  async getStocksByIds(
-    stockRequests: { stockId: number; quantity: number }[]
-  ) {
-    const stockIds = stockRequests.map(item => item.stockId);
+  async getStocksByIds(stockRequests: { stockId: number; quantity: number }[]) {
+  const stockIds = stockRequests.map(item => item.stockId);
 
-    // Fetch stocks with productVariant and product relations
-    const stocks = await this.stockRepository.find({
-      where: { id: In(stockIds) },
-      relations: ['productVariant', 'productVariant.product', 'productVariant.size', 'productVariant.color', 'productVariant.images'],
-    });
-    // Map the stocks in the order of the requests, include quantity from request
-    return stockRequests.map(request => {
+  const stocks = await this.stockRepository.find({
+    where: { id: In(stockIds) },
+    relations: [
+      'productVariant',
+      'productVariant.product',
+      'productVariant.size',
+      'productVariant.color',
+      'productVariant.images',
+    ],
+  });
+
+  const result = await Promise.all(
+    stockRequests.map(async request => {
       const stock = stocks.find(s => s.id === request.stockId);
-      if (!stock) return null; // or handle missing stocks as you prefer
+      if (!stock) return null;
+
+      const available = await this.stockMovementsService.getNetQuantityForStockAndStage(
+        stock.id,
+        StockStage.AVAILABLE,
+      );
 
       return {
         stockId: stock.id,
@@ -179,13 +188,17 @@ export class StocksService {
         discount: stock.discount,
         productName: stock.productVariant.product.name,
         description: stock.productVariant.product.description,
-        size: stock.productVariant.size ? stock.productVariant.size.label : null,
-        color: stock.productVariant.color ? stock.productVariant.color.name : null,
-        image: stock.productVariant.images.length > 0 ? stock.productVariant.images[0].imageUrl : null,
-
+        size: stock.productVariant.size?.label ?? null,
+        color: stock.productVariant.color?.name ?? null,
+        image: stock.productVariant.images?.[0]?.imageUrl ?? null,
+        available: available,
       };
-    }).filter(Boolean);
-  }
+    })
+  );
+
+  return result.filter(Boolean);
+}
+
 
   async approve(id: number): Promise<Stock> {
     const stock = await this.stockRepository.findOne({

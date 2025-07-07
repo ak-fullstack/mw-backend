@@ -47,11 +47,7 @@ order: Order;
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   ctc: number;
 
-  @Column({ type: 'int', nullable: true })
-  returnQuantity: number;
 
-  @Column({ type: 'text', nullable: true })
-  returnReason: string;
 
   @Column({
     type: 'enum',
@@ -60,8 +56,7 @@ order: Order;
   })
   gstType: GstType;
 
-  @Column({ nullable: true })
-  refundedAmount: number;
+
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   subTotal: number;

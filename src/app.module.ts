@@ -16,13 +16,14 @@ import { PaymentsModule } from './order/payments/payments.module';
 import { SocketModule } from './sockets/socket.module';
 import { QrCodeModule } from './qr-code/qr-code.module';
 import { PdfGenerationModule } from './pdf-generation/pdf-generation.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule],
   controllers: [AppController],
   providers: [AppService],
 })

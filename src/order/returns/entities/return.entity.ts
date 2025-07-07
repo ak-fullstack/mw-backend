@@ -24,8 +24,8 @@ export class Return {
     @Column({ type: 'text', nullable: true })
     reason: string;
 
-    @Column({ type: 'enum', enum: ReturnStatus, default: ReturnStatus.PENDING })
-    retrunStatus: ReturnStatus;
+    @Column({ type: 'enum', enum: ReturnStatus, default: ReturnStatus.RETURN_REQUESTED })
+    returnStatus: ReturnStatus;
 
     @Column({
         type: 'enum',

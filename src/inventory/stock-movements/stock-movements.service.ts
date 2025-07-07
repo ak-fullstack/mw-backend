@@ -17,12 +17,13 @@ export class StockMovementsService {
     private readonly stockRepo: Repository<Stock>,
   ) { }
 
-  async createMovements(
-    movements: CreateStockMovementDto[],
-    manager?: EntityManager,
-  ): Promise<StockMovement[]> {
-    const repo = manager ? manager.getRepository(StockMovement) : this.stockMovementRepo;
+async createMovements(
+  movements: CreateStockMovementDto[],
+  manager?: EntityManager,
+): Promise<StockMovement[]> {
+  const repo = manager ? manager.getRepository(StockMovement) : this.stockMovementRepo;
 
+  try {
     const created = movements.map(m => {
       const { stockId, orderId, orderItemId, ...rest } = m;
       return repo.create({
@@ -34,7 +35,11 @@ export class StockMovementsService {
     });
 
     return await repo.save(created);
+  } catch (error) {
+    console.error('Error creating stock movements:', error);
+    throw error; // Re-throw to allow upstream error handling if needed
   }
+}
 
 
   async getNetStockStageQuantities(): Promise<any> {
@@ -139,7 +144,7 @@ export class StockMovementsService {
 }
 
 
-
-
-
+getStockStages(): string[] {
+  return Object.values(StockStage);
+}
 }

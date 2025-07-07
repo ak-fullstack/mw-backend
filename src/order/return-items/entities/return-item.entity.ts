@@ -5,8 +5,10 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Return } from 'src/order/returns/entities/return.entity'; 
+import { Return } from 'src/order/returns/entities/return.entity';
 import { OrderItem } from 'src/order/order-items/entities/order-item.entity';
+import { ReturnItemStatus } from 'src/enum/return-items-status.enum';
+import { ReturnItemCondition } from 'src/enum/return-item-condition.enum';
 
 @Entity('return_items')
 export class ReturnItem {
@@ -27,6 +29,10 @@ export class ReturnItem {
   @Column({ type: 'text', nullable: true })
   reason: string;
 
-  @Column({ type: 'enum', enum: ['PENDING', 'APPROVED', 'REJECTED', 'REFUNDED'], default: 'PENDING' })
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
+  @Column({ type: 'enum', enum: ReturnItemStatus, default: ReturnItemStatus.RETURN_REQUESTED })
+  status: ReturnItemStatus;
+
+  @Column({ type: 'enum', enum: ReturnItemCondition, default: null })
+  itemCondition: ReturnItemCondition;
+
 }

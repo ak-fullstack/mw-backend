@@ -15,6 +15,7 @@ import { CustomerService } from 'src/customer/customer.service';
 // import { RedisModule } from 'src/redis/redis.module';
 import { OtpModule } from './otp/otp.module';
 import { Otp } from './otp/entities/otp.entity';
+import { FirebaseModule } from 'src/firebase/firebase.module';
 
 
 @Module({
@@ -23,6 +24,7 @@ import { Otp } from './otp/entities/otp.entity';
   exports: [AuthService, JwtStrategy, JwtAuthGuard], 
   imports:[
     // RedisModule,
+    FirebaseModule,
     TypeOrmModule.forFeature([Customer,Otp]),
     UserModule,
     JwtModule.registerAsync({

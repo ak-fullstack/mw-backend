@@ -1,8 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,6 +12,8 @@ import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
 import { Response } from 'express';
 import { OtpService } from './otp/otp.service';
 import { Otp } from './otp/entities/otp.entity';
+import { VerifyUserOtpDto } from './dto/verify-user-otp.dto';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 
 
@@ -37,6 +37,7 @@ export class AuthService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(Otp)
     private otpRepository: Repository<Otp>,
+    private readonly firebaseService:FirebaseService
     // private readonly redisService: RedisService,
 
   ) {
@@ -58,18 +59,37 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+     if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User is Blocked');
+    }
+
     const isPasswordValid = await user.comparePassword(sendUserLoginOtpDto.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
-    }
-
-    const { code } = await this.otpService.generateOtp(sendUserLoginOtpDto.email);
-    await this.emailService.sendOtpMail(sendUserLoginOtpDto.email, code)
-    return { success: true, message: 'OTP sent successfully' };
+    }    
+    // const { code } = await this.otpService.generateOtp(sendUserLoginOtpDto.email);
+    // await this.emailService.sendOtpMail(sendUserLoginOtpDto.email, code)
+    return { success: true, message: 'Password Validated',phone:user.phone };
   }
 
-  async verifyOtp(verifyDto: VerifyOtpDto): Promise<{}> {
-    const user = await this.validateUser(verifyDto.email, verifyDto.otp);
+  async verifyUserOtp(verifyUserDto: VerifyUserOtpDto): Promise<{}> {
+    // const user = await this.validateUser(verifyUserDto.email, verifyUserDto.token);
+    const user = await this.userService.findByUserEmail(verifyUserDto.email);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+     if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User is Blocked');
+    }
+
+    const decoded=await this.firebaseService.verifyToken(verifyUserDto.token);
+    const decodedPhone = decoded.phone_number?.replace(/^\+91/, '');
+
+    if (!decodedPhone || decodedPhone !== user.phone) {
+  throw new UnauthorizedException('Phone number mismatch');
+}
+        // return {};
     const payload = {
       sub: user.id,
       email: user.email,

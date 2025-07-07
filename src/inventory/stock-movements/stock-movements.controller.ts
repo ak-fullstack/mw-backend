@@ -21,6 +21,11 @@ export class StockMovementsController {
     return this.stockMovementsService.getNetStockStageQuantities();
   }
 
+  @Get('stock-stages')
+  getStages() {
+    return this.stockMovementsService.getStockStages();
+  }
+
   
 
 }

@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateGoogleCloudStorageDto } from './dto/create-google-cloud-storage.dto';
-import { UpdateGoogleCloudStorageDto } from './dto/update-google-cloud-storage.dto';
 import { Storage } from '@google-cloud/storage';
-import { StorageService } from '../interface/storage.interface';
 
 
 
@@ -14,7 +11,7 @@ export class GoogleCloudStorageService {
 
   
   private storage = new Storage({ keyFilename: 'cloud-bucket-access.json' });
-  private bucket = this.storage.bucket('mw-dev-bucket');
+  private bucket = this.storage.bucket('mw-admin-dev-image-bucket');
 
   async upload(file: Express.Multer.File,folderName:string): Promise<string> {
     // Generate a unique file name based on the timestamp or use a UUID

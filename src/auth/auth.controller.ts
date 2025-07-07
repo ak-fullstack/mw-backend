@@ -1,10 +1,11 @@
 import { Controller, Post, Body, UnauthorizedException, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { VerifyCustomerOtpDto } from './dto/verify-customer-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { SendUserLoginOtpDto } from './dto/send-user-login-otp.dto';
 import { Response } from 'express';
+import { VerifyUserOtpDto } from './dto/verify-user-otp.dto';
 
 
 @Controller('auth')
@@ -23,8 +24,8 @@ export class AuthController {
   }
 
   @Post('verify-admin-otp')
-  async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<any> {
-    return this.authService.verifyOtp(verifyDto);
+  async verifyUserOtp(@Body() verifyUserDto: VerifyUserOtpDto): Promise<any> {
+    return this.authService.verifyUserOtp(verifyUserDto);
   }
 
 
@@ -55,7 +56,7 @@ export class AuthController {
   }
 
   @Post('verify-customer-email-otp')
-  async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyOtpDto, @Res({ passthrough: true }) res: Response) {
+  async verifyCustomerEmailOtp(@Body() verifyOtpDto: VerifyCustomerOtpDto, @Res({ passthrough: true }) res: Response) {
     return this.authService.verifyCustomerOtp(verifyOtpDto.email, verifyOtpDto.otp, res, verifyOtpDto.purpose);
   }
 
