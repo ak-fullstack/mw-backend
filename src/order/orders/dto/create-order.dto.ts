@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {IsString,IsNotEmpty,IsEmail,Matches,Length,IsBoolean,IsArray,ValidateNested,IsOptional,IsNumber} from 'class-validator';
+import { State } from 'src/enum/states.enum';
 
 export class OrderItemDto {
   @IsNumber()
@@ -35,4 +36,13 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
+
+  @IsOptional()
+  @IsString()
+  shippingState?: State;
+
+  @IsString()
+  @IsNotEmpty()
+  paymentSource: string;
+
 }

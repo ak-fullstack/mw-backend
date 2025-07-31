@@ -30,30 +30,17 @@ export class CustomerAddressService {
     const customer = await this.customerRepo.findOne({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Customer not found');
 
-    if (!customer.billingAddressId || !customer.shippingAddressId) {
-      customer.billingAddressId = savedAddress.id;
-      customer.shippingAddressId = savedAddress.id;
-      await this.customerRepo.save(customer);
-    }
-
+     if (!customer.billingAddress || !customer.shippingAddress) {
+    customer.billingAddress = savedAddress;
+    customer.shippingAddress = savedAddress;
+    await this.customerRepo.save(customer);
+  }
+  
     return savedAddress;
   }
 
-  findAll() {
-    return `This action returns all customerAddress`;
-  }
 
-  findOne(id: number) {
-    return `This action returns a #${id} customerAddress`;
-  }
 
-  update(id: number, updateCustomerAddressDto: UpdateCustomerAddressDto) {
-    return `This action updates a #${id} customerAddress`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} customerAddress`;
-  }
 
   async updateAddressIfOwned(customerId: number,updateDto: UpdateCustomerAddressDto): Promise<any> {
     const addressId = updateDto.id;

@@ -7,6 +7,8 @@ import { PermissionsGuard } from 'src/guards/permissions.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { RolesGuard } from 'src/guards/roles.guard';
 import {  RequirePermissions } from 'src/decorators/permission.decorator';
+import { RoleEnum } from 'src/enum/roles.enum';
+import { PermissionEnum } from 'src/enum/permissions.enum';
 
 @Controller('stocks')
 export class StocksController {
@@ -18,7 +20,7 @@ export class StocksController {
   }
 
   @Post('get-stocks-by-ids')
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   @UseGuards(JwtAuthGuard,RolesGuard)
   async getBulkStocks(@Body() body: { stockId: number; quantity: number }[]) {
     return this.stocksService.getStocksByIds(body);
@@ -32,16 +34,23 @@ export class StocksController {
 
   @Patch('approve/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('UPDATE_STOCK_APPROVAL')
+  @RequirePermissions(PermissionEnum.UPDATE_STOCK_APPROVAL)
   async approveStock(@Param('id') id: string) {
     return this.stocksService.approve(+id);
   }
 
   @Patch('toggleSale/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('UPDATE_STOCK_ONSALE')
+  @RequirePermissions(PermissionEnum.UPDATE_STOCK_APPROVAL)
   async toggleSale(@Param('id') id: string) {
     return this.stocksService.toggleSale(+id);
+  }
+
+   @Patch('toggleDiscount/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.UPDATE_STOCK_APPROVAL)
+  async toggleDiscount(@Param('id') id: string) {
+    return this.stocksService.toggleDiscount(+id);
   }
 
 

@@ -21,6 +21,16 @@ export class Refund {
   @ManyToOne(() => Payment, payment => payment.refunds)
   payment: Payment;
 
-  @CreateDateColumn()
+    @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }

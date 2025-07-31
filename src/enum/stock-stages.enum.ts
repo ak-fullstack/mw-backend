@@ -7,6 +7,7 @@ export enum StockStage {
   SHIPPED = 'shipped',
   IN_TRANSIT_TO_CUSTOMER = 'in_transit_to_customer',
   DELIVERED = 'delivered',
+  RETURN_ACCEPTED='return_accepted',
   IN_TRANSIT_TO_SELLER = 'in_transit_to_seller',
   RETURNED = 'returned',
   DAMAGED = 'damaged',

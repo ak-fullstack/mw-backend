@@ -17,13 +17,15 @@ import { SocketModule } from './sockets/socket.module';
 import { QrCodeModule } from './qr-code/qr-code.module';
 import { PdfGenerationModule } from './pdf-generation/pdf-generation.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { RedisModule } from './redis/redis.module';
+import { EodClosureModule } from './eod-closure/eod-closure.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule],
   controllers: [AppController],
   providers: [AppService],
 })

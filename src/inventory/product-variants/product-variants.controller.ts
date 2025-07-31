@@ -1,24 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { ProductVariantsService } from './product-variants.service';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RequirePermissions } from 'src/decorators/permission.decorator';
+import { PermissionEnum } from 'src/enum/permissions.enum';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('product-variants')
 export class ProductVariantsController {
   constructor(private readonly productVariantsService: ProductVariantsService) { }
 
   @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_PRODUCT)
   async findAll() {
     return await this.productVariantsService.findAll();
   }
 
-  @Post()
-  create(@Body() createProductVariantDto: CreateProductVariantDto) {
-    return this.productVariantsService.create(createProductVariantDto);
-  }
+
 
   @Post('upload-product-image-with-id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.CREATE_PRODUCT, PermissionEnum.UPDATE_PRODUCT)
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -30,38 +35,13 @@ export class ProductVariantsController {
     @UploadedFile() file: Express.Multer.File,
     @Body('id') id: string,
   ) {
-    return this.productVariantsService.uploadFile(file,id)
-    // const fileUrl = await this.googleCloudStorageService.upload(file, 'user-profiles');
-
-    // if (id) {
-    //   await this.yourService.attachImageToEntity(Number(id), fileUrl);
-    // }
-    console.log(id);
-    
-
-    const fileUrl='sdfsdf'
-
-    return { url: fileUrl };
+    return this.productVariantsService.uploadFile(file, id)
   }
 
-
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productVariantsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductVariantDto: UpdateProductVariantDto) {
-    return this.productVariantsService.update(+id, updateProductVariantDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productVariantsService.remove(+id);
-  }
 
   @Get('by-product/:productId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_PRODUCT)
   getVariants(@Param('productId') productId: string) {
     return this.productVariantsService.getVariantsByProduct(+productId);
   }

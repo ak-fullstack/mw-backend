@@ -13,9 +13,6 @@ export class  StockPurchase {
   @Column()
   billRefNo: string;
 
-  @CreateDateColumn()
-  createdAt: Date;
-
    @Column('decimal', { precision: 10, scale: 2 })
   subTotal: number;
 
@@ -45,4 +42,17 @@ export class  StockPurchase {
 
   @OneToMany(() => Stock, stock => stock.purchase)
   stocks: Stock[];
+
+  @Column({
+  type: 'timestamp',
+  default: () => 'CURRENT_TIMESTAMP',
+})
+createdAt: Date;
+
+@Column({
+  type: 'timestamp',
+  default: () => 'CURRENT_TIMESTAMP',
+  onUpdate: 'CURRENT_TIMESTAMP',
+})
+updatedAt: Date;
 }

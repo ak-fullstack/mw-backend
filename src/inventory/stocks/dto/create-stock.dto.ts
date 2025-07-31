@@ -63,6 +63,9 @@ export class VariantDto {
   @IsNumber()
   totalAmount: number;
 
+   @IsNumber()
+  expiryDays: number;
+
 }
 
 

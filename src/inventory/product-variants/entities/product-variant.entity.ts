@@ -28,4 +28,17 @@ export class ProductVariant {
 
     @OneToMany(() => Stock, stock => stock.productVariant)
     stocks: Stock[];
+
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+    createdAt: Date;
+
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
+    })
+    updatedAt: Date;
 }

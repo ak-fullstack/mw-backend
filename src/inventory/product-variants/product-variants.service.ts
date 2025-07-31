@@ -21,9 +21,7 @@ export class ProductVariantsService {
     private readonly productImageRepo: Repository<ProductImage>,
   ) { }
 
-  create(createProductVariantDto: CreateProductVariantDto) {
-    return 'This action adds a new productVariant';
-  }
+
 
  async findAll() {
   const products = await this.productRepo.find({
@@ -116,15 +114,4 @@ async uploadFile(file: Express.Multer.File, variantId?: string) {
   };
 }
 
-  findOne(id: number) {
-    return `This action returns a #${id} productVariant`;
-  }
-
-  update(id: number, updateProductVariantDto: UpdateProductVariantDto) {
-    return `This action updates a #${id} productVariant`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} productVariant`; 
-  }
 }

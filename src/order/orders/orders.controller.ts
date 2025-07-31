@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Res, Param, UsePipes, ValidationPipe, UseGuards, Req, Query, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Param, UsePipes, ValidationPipe, UseGuards, Req, Query, Patch, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -12,6 +12,8 @@ import { StockStage } from 'src/enum/stock-stages.enum';
 import { OrderStatus } from 'src/enum/order-status.enum';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { MoveToPickupDto } from './dto/move-to-pickup.dto';
+import { RoleEnum } from 'src/enum/roles.enum';
+import { CalculateItemsDto } from './dto/calculate-items.dto';
 
 
 @Controller('orders')
@@ -21,17 +23,26 @@ export class OrdersController {
   @Post('create-order')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   async createOrder(@Req() req, @Body() createOrderDto: CreateOrderDto) {
 
 
     return await this.ordersService.create(createOrderDto, req.user.userId);
   }
 
+  @Post('calculate-order')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.CUSTOMER)
+  async calculateOrderTotal( @Body() calculateItemsDto: CalculateItemsDto) {
+    return await this.ordersService.calculateOrder(calculateItemsDto.items, calculateItemsDto.shippingState);
+  }
+
+
   @Get()
   getAllOrders(
     @Query('id') id?: string,
-    @Query('razorpayOrderId') razorpayOrderId?: string,
+    @Query('razorpayOrderId') razorpayOrderId?: string, 
     @Query('orderStatus') orderStatus?: string,
     @Query('paymentStatus') paymentStatus?: string,
     @Query('startDate') startDate?: string,
@@ -51,13 +62,27 @@ export class OrdersController {
     });
   }
 
+  @Get('order-report')
+  getOrderReport(
+    @Query('paymentStatus') paymentStatus?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ): Promise<any> {
+
+    return this.ordersService.orderReport({
+      paymentStatus,
+      startDate,
+      endDate,
+    });
+  }
+
   @Get('customer-orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('FAM_MEMBER')
-async getCustomerOrders(@Req() req): Promise<any> {
-  const userId = req.user.userId; // assuming user.id is set in JWT payload
-  return await this.ordersService.getCustomerOrders(userId);
-}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.CUSTOMER)
+  async getCustomerOrders(@Req() req): Promise<any> {
+    const userId = req.user.userId; // assuming user.id is set in JWT payload
+    return await this.ordersService.getCustomerOrders(userId);
+  }
 
   @Get('reception-orders')
   getReceptionOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
@@ -72,7 +97,7 @@ async getCustomerOrders(@Req() req): Promise<any> {
 
   @Get('qc-orders')
   getPickupOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
-    return this.ordersService.findOrdersByOrderStatus({ 
+    return this.ordersService.findOrdersByOrderStatus({
       ...query,
       page: parseInt(query.page),
       limit: parseInt(query.limit),
@@ -83,7 +108,7 @@ async getCustomerOrders(@Req() req): Promise<any> {
 
   @Get('shipped-orders')
   getShippedOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
-    return this.ordersService.findOrdersByOrderStatus({ 
+    return this.ordersService.findOrdersByOrderStatus({
       ...query,
       page: parseInt(query.page),
       limit: parseInt(query.limit),
@@ -92,9 +117,9 @@ async getCustomerOrders(@Req() req): Promise<any> {
     });
   }
 
-   @Get('packed-orders')
+  @Get('packed-orders')
   getPackedOrder(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
-    return this.ordersService.findOrdersByOrderStatus({ 
+    return this.ordersService.findOrdersByOrderStatus({
       ...query,
       page: parseInt(query.page),
       limit: parseInt(query.limit),
@@ -106,31 +131,31 @@ async getCustomerOrders(@Req() req): Promise<any> {
 
   @Patch('move-to-qc')
   moveFromReservedToQc(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
-    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.RESERVED, StockStage.QC_CHECK,OrderStatus.CONFIRMED, OrderStatus.QC_CHECK);
+    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.RESERVED, StockStage.QC_CHECK, OrderStatus.CONFIRMED, OrderStatus.QC_CHECK);
   }
 
 
   @Patch('move-to-courier-pickup')
   async moveFromQcToPickup(@Body() MoveToPickupDto: MoveToPickupDto) {
-     await this.ordersService.saveOrderDimensions(MoveToPickupDto.orderId, {
-    length: MoveToPickupDto.length,
-    breadth: MoveToPickupDto.breadth,
-    height: MoveToPickupDto.height,
-    weight: MoveToPickupDto.weight,
-  });
-    return this.ordersService.updateOrderStatus(MoveToPickupDto, StockStage.QC_CHECK, StockStage.WAITING_PICKUP,OrderStatus.QC_CHECK, OrderStatus.WAITING_PICKUP);
+    await this.ordersService.saveOrderDimensions(MoveToPickupDto.orderId, {
+      length: MoveToPickupDto.length,
+      breadth: MoveToPickupDto.breadth,
+      height: MoveToPickupDto.height,
+      weight: MoveToPickupDto.weight,
+    });
+    return this.ordersService.updateOrderStatus(MoveToPickupDto, StockStage.QC_CHECK, StockStage.WAITING_PICKUP, OrderStatus.QC_CHECK, OrderStatus.WAITING_PICKUP);
   }
 
   @Patch('ship-order')
   shipOrder(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
-    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.WAITING_PICKUP, StockStage.SHIPPED,OrderStatus.WAITING_PICKUP, OrderStatus.SHIPPED);
+    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.WAITING_PICKUP, StockStage.SHIPPED, OrderStatus.WAITING_PICKUP, OrderStatus.SHIPPED);
   }
 
   @Patch('deliver-order')
   deliverOrder(@Body() updateOrderStausDto: UpdateOrderStatusDto) {
-    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.SHIPPED, StockStage.DELIVERED,OrderStatus.SHIPPED, OrderStatus.DELIVERED);
+    return this.ordersService.updateOrderStatus(updateOrderStausDto, StockStage.SHIPPED, StockStage.DELIVERED, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
   }
-  
+
 
 
 
@@ -139,6 +164,36 @@ async getCustomerOrders(@Req() req): Promise<any> {
   async findOne(@Param('id') id: number): Promise<any> {
     return await this.ordersService.findById(id);
   }
+
+  @Get('success/:orderId')
+  @UseGuards(JwtAuthGuard,RolesGuard)
+async getOrderSuccess(
+  @Param('orderId') orderId: string,
+  @Req() req
+) {
+  const user = req.user.userId; // injected by auth guard
+  const order = await this.ordersService.findByIdWithUser(orderId);
+
+  if (!order) throw new NotFoundException('Order not found');
+
+  if (order.customer.id !== user)
+    throw new ForbiddenException('Not your order');
+
+  if (order.paymentStatus !== PaymentStatus.PAID)
+    throw new BadRequestException('Order is not paid');
+
+  return {
+    message: 'Order paid successfully',
+    data: {
+      orderId: order.id,
+      amount: order.paidAmount,
+      paymentMode: order.paymentSource,
+      // razorpayOrderId: order.razorpayOrderId,
+      date: order.paidAt || order.updatedAt,
+    },
+  };
+}
+  
 
   @Post('generate-qr')
   async createQr(@Body('text') text: string, @Res() res: Response) {

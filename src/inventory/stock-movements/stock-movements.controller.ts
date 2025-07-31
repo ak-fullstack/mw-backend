@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { StockMovementsService } from './stock-movements.service';
 import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
-import { UpdateStockMovementDto } from './dto/update-stock-movement.dto';
 import { StockMovement } from './entities/stock-movement.entity';
+import { RequirePermissions } from 'src/decorators/permission.decorator';
+import { PermissionEnum } from 'src/enum/permissions.enum';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('stock-movements')
 export class StockMovementsController {
-  constructor(private readonly stockMovementsService: StockMovementsService) {}
+  constructor(private readonly stockMovementsService: StockMovementsService) { }
 
-  @Post('create')
   async createBulk(
     @Body() body: CreateStockMovementDto[],
   ): Promise<StockMovement[]> {
@@ -17,15 +19,19 @@ export class StockMovementsController {
 
 
   @Get('stage-summary')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_STOCK)
   async getNetQuantitiesByStage() {
     return this.stockMovementsService.getNetStockStageQuantities();
   }
 
   @Get('stock-stages')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_STOCK)
   getStages() {
     return this.stockMovementsService.getStockStages();
   }
 
-  
+
 
 }

@@ -3,6 +3,7 @@ import { RolePermissionService } from './role-permission.service'; // Import the
 import { RequirePermissions } from 'src/decorators/permission.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
+import { PermissionEnum } from 'src/enum/permissions.enum';
 
 @Controller('role-permission')
 export class RolePermissionController {
@@ -11,7 +12,7 @@ export class RolePermissionController {
 
     @Get('get-all-permissions')
     @UseGuards(JwtAuthGuard,PermissionsGuard)
-    @RequirePermissions('READ_PERMISSION')
+    @RequirePermissions(PermissionEnum.READ_PERMISSION)
     async getAllPermissions(): Promise<any> {
         return this.RolePermissionService.getAllPermissions()  // Get all roles from the enum
     }

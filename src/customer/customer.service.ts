@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { REQUEST } from '@nestjs/core';
 import { StateGstTypeMap } from 'src/enum/states.enum';
+import { WalletService } from './wallet/wallet.service';
 
 @Injectable()
 export class CustomerService {
@@ -15,6 +16,7 @@ export class CustomerService {
   constructor(
     private readonly jwtService: JwtService,
     private configService: ConfigService,
+    private walletService:WalletService,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
   ) { }
@@ -35,6 +37,8 @@ export class CustomerService {
       const customer = this.customerRepository.create({ ...createCustomerDto, emailId: payload.email.toLowerCase() });
       await customer.setPassword(createCustomerDto.password);
       await this.customerRepository.save(customer);
+      await this.walletService.createWalletForCustomer(customer.id);
+
       return { message: 'Registration Successful' }
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
@@ -116,7 +120,7 @@ export class CustomerService {
     if (!id) {
       return null; // or throw error
     }
-    return await this.customerRepository.findOne({ where: { id } });
+    return await this.customerRepository.findOne({ where: { id } ,relations:['wallet']});
   }
 
 

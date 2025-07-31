@@ -1,36 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { StockPurchaseService } from './stock-purchase.service';
 import { CreateStockPurchaseDto } from './dto/create-stock-purchase.dto';
 import { UpdateStockPurchaseDto } from './dto/update-stock-purchase.dto';
+import { RequirePermissions } from 'src/decorators/permission.decorator';
+import { PermissionEnum } from 'src/enum/permissions.enum';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('stock-purchase')
 export class StockPurchaseController {
   constructor(private readonly stockPurchaseService: StockPurchaseService) { }
 
-  @Post()
-  create(@Body() createStockPurchaseDto: CreateStockPurchaseDto) {
-    return this.stockPurchaseService.create(createStockPurchaseDto);
-  }
-
-
 
   @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+    @RequirePermissions(PermissionEnum.READ_STOCK)
   findAllWithStocks() {
     return this.stockPurchaseService.findAllWithStocks();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.stockPurchaseService.findOne(+id);
-  }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStockPurchaseDto: UpdateStockPurchaseDto) {
-    return this.stockPurchaseService.update(+id, updateStockPurchaseDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.stockPurchaseService.remove(+id);
-  }
 }

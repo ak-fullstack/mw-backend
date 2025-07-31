@@ -18,6 +18,10 @@ export class VerifyReturnItemDto {
   @IsString()
   @IsNotEmpty()
   itemCondition: ReturnItemCondition;
+
+  @IsInt()
+  @IsNotEmpty()
+  orderItemId: number;
 }
 
 export class VerifyReturnItemsDto {

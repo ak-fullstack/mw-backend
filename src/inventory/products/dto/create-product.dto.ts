@@ -50,13 +50,18 @@ export class VariantDto {
 }
 
 export class CreateProductDto {
-  @ValidateNested()
-  @Type(() => CategoryDto)
-  category: CategoryDto;
 
-  @ValidateNested()
-  @Type(() => SubCategoryDto)
-  subCategory: SubCategoryDto;
+  @IsNumber()
+  categoryId: number;
+
+  @IsNumber()
+  subCategoryId: number;
+
+    @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VariantDto)
+  variants: VariantDto[];
+
 
   @IsString()
   @IsNotEmpty()
@@ -76,8 +81,5 @@ export class CreateProductDto {
   @IsBoolean()
   hasColor: boolean;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => VariantDto)
-  variants: VariantDto[];
+
 }

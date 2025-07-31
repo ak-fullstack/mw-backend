@@ -11,6 +11,7 @@ import { Order } from 'src/order/orders/entities/order.entity';
 import { ReturnItem } from 'src/order/return-items/entities/return-item.entity';
 import { ReturnType } from 'src/enum/return-type.enum';
 import { ReturnStatus } from 'src/enum/return-status.enum';
+import { ReturnImage } from '../return-images/entities/return-image.entity';
 
 @Entity('returns')
 export class Return {
@@ -32,11 +33,33 @@ export class Return {
         enum: ReturnType,
         default: ReturnType.REPLACEMENT,
     })
-    returnType: ReturnType; 
+    returnType: ReturnType;
 
     @OneToMany(() => ReturnItem, item => item.returnRequest, { cascade: true })
     items: ReturnItem[];
 
-    @CreateDateColumn()
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
     createdAt: Date;
+
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
+    })
+    updatedAt: Date;
+
+    @Column({
+        type: 'timestamp', 
+        nullable: true,
+    })
+    processedDate: Date;
+
+
+    @OneToMany(() => ReturnImage, (image) => image.return, {
+        cascade: true,
+    })
+    images: ReturnImage[];
 }

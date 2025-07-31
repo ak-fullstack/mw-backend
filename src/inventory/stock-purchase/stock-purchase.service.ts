@@ -17,8 +17,7 @@ export class StockPurchaseService {
 async findAllWithStocks(): Promise<StockPurchase[]> {
   const stocks = await this.stockPurchaseRepo.find({
     relations: [
-      'stocks',
-      'stocks.productVariant',
+      'supplier',
       'stocks.productVariant.product',
       'stocks.productVariant.size',
       'stocks.productVariant.color',
@@ -33,23 +32,4 @@ async findAllWithStocks(): Promise<StockPurchase[]> {
   return stocks
 }
 
-
-
-
-    create(createStockPurchaseDto: CreateStockPurchaseDto) {
-    return 'This action adds a new stockPurchase';
-  }
-
-
-  findOne(id: number) {
-    return `This action returns a #${id} stockPurchase`;
-  }
-
-  update(id: number, updateStockPurchaseDto: UpdateStockPurchaseDto) {
-    return `This action updates a #${id} stockPurchase`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} stockPurchase`;
-  }
 }

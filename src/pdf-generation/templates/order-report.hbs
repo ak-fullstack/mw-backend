@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Order Summary</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+    * {
+      font-family: "Barlow", sans-serif !important;
+    }
+
+    .content {
+      padding: 20px;
+      /* inner content padding inside each page */
+    }
+
+    body {
+      font-size: 14px;
+      margin: 20px;
+      background-color: rgb(248, 248, 248);
+    }
+
+    .order {
+      border: 1px solid #ccc;
+      margin-bottom: 30px;
+      padding: 15px;
+      page-break-inside: avoid;
+      display: flex;
+      flex-wrap: wrap;
+      border-radius: 20px;
+      background-color: white;
+    }
+
+    .order h2 {
+      margin-top: 0;
+    }
+
+    .items {
+      margin-top: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      table-layout: fixed;
+      word-wrap: break-word;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    h3 {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="content">
+    <h2>Order Report</h2>
+    <p>Orders</p>
+    {{#each orders}}
+    <div class="order" style="margin-top:20px">
+      <div style="display:flex;flex-wrap:wrap">
+        {{#each keyValues}}
+        <p style="padding-right:20px;text-transform:uppercase;amrgin:0px"><strong>{{this.[0]}}:</strong> {{this.[1]}}
+        </p>
+        {{/each}}
+      </div>
+
+      {{#if itemChunks}}
+      {{#each itemChunks}}
+      <div class="items">
+        {{!-- <h3>Items ({{@index}})</h3> --}}
+        <table>
+          <thead>
+            <tr>
+              {{#each keys}}
+              <th>{{this.label}}</th>
+              {{/each}}
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              {{#each ../keys}}
+              <td>{{lookup ../this this.key}}</td>
+              {{/each}}
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/each}}
+      {{/if}}
+    </div>
+    {{/each}}
+
+    <p>Returns</p>
+
+    {{#each returns}}
+    <div class="order">
+      <div style="display:flex;flex-wrap:wrap">
+        {{#each keyValues}}
+        <p style="padding-right:20px;text-transform:uppercase;amrgin:0px"><strong>{{this.[0]}}:</strong> {{this.[1]}}
+        </p>
+        {{/each}}
+      </div>
+
+      {{#if itemChunks}}
+      {{#each itemChunks}}
+      <div class="items">
+        {{!-- <h3>Items ({{@index}})</h3> --}}
+        <table>
+          <thead>
+            <tr>
+              {{#each keys}}
+              <th>{{this.label}}</th>
+              {{/each}}
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              {{#each ../keys}}
+              <td>{{lookup ../this this.key}}</td>
+              {{/each}}
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/each}}
+      {{/if}}
+    </div>
+    {{/each}}
+<div style="font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto;">
+
+  <h2 style="margin-bottom: 10px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Order Summary</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px 40px; margin-bottom: 20px;">
+    <div><strong>Total Orders:</strong> {{totalOrders}}</div>
+    <div><strong>Total Returns:</strong> {{totalReturns}}</div>
+    <div><strong>Order Subtotal:</strong> ₹{{orderSubtotalSum}}</div>
+    <div><strong>Order Delivery Charge:</strong> ₹{{orderDeliveryChargeSum}}</div>
+    <div><strong>Order Tax:</strong> ₹{{orderTaxSum}}</div>
+    <div><strong>Order Wallet Payment:</strong> ₹{{orderWalletSum}}</div>
+    <div><strong>Order Razorpay Payment:</strong> ₹{{orderRazorpaySum}}</div>
+    <div><strong>Order Total:</strong> ₹{{orderTotalSum}}</div>
+  </div>
+
+  <h2 style="margin-bottom: 10px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Return Summary</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px 40px; margin-bottom: 20px;">
+    <div><strong>Return Subtotal:</strong> ₹{{returnSubtotalSum}}</div>
+    <div><strong>Return Delivery Charge:</strong> ₹{{returnDeliveryChargeSum}}</div>
+    <div><strong>Return Tax:</strong> ₹{{returnTaxSum}}</div>
+    <div><strong>Return Total:</strong> ₹{{returnTotalSum}}</div>
+  </div>
+
+  <h2 style="margin-bottom: 10px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Net Summary</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px 40px; margin-bottom: 20px;">
+    <div><strong>Net Subtotal:</strong> ₹{{netSubtotalSum}}</div>
+    <div><strong>Net Delivery Charge:</strong> ₹{{netDeliveryChargeSum}}</div>
+    <div><strong>Net Tax:</strong> ₹{{netTaxSum}}</div>
+    <div><strong>Net Total:</strong> ₹{{netTotalSum}}</div>
+  </div>
+
+</div>
+
+  </div>
+
+
+</body>
+
+</html>

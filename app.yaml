@@ -14,8 +14,8 @@ env_variables:
   # MySQL Database Config
   DB_HOST: 'freetier-dev.cpea4uou83v5.ap-south-1.rds.amazonaws.com'
   DB_PORT: '3306'
-  DB_USER: 'admin'
-  DB_PASSWORD: '12345678'
+  DB_USER: 'motowagon'
+  DB_PASSWORD: 'Motowagon@2025!'
   DB_NAME: 'mw_local'
 
   # JWT
@@ -23,13 +23,34 @@ env_variables:
   JWT_EXPIRES_IN: '10d'
 
   # REDIS
-  REDIS_TOKEN_TTL: '3600'
+  REDIS_HOST: 'proven-elf-57467.upstash.io'
+  REDIS_PORT: '6379'
+  REDIS_PASSWORD: 'AeB7AAIjcDE3YThhNzA2ODYzZDM0YTAxODY2YjRmMDEzMWE5NDhhNHAxMA'
+  REDIS_TLS : 'true'
+  REDIS_TOKEN_TTL: '86400'
 
   # GOOGLE OAUTH
   GOOGLE_CLIENT_ID: '509406744774-mlgslvgav2f9u73tjd9k0796c16s15j3.apps.googleusercontent.com'
   GOOGLE_SECRET: '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'
 
-  #RAZORPAY
+  # RAZORPAY
   RAZORPAY_KEY_ID: 'rzp_test_3Eh0pmacsH3Row'
   RAZORPAY_KEY_SECRET: 'X78USNy6A6FuaiXDBA7MwR3L'
   RAZORPAY_WEB_HOOK_SECRET: 'webhook'
+
+  # MAIL
+  GOOGLE_MAILER: 'arunkumar.work.1997@gmail.com'
+  GOOGLE_MAILER_PASSWORD: 'xecrytelmcmlbtsj'
+
+  # FIREBASE
+  FIREBASE_TYPE: 'service_account'
+  FIREBASE_PROJECT_ID: 'mw-admin-136e3'
+  FIREBASE_PRIVATE_KEY_ID : 'c3ada1f513bf0402f9c41294dac7a21d76205697'
+  FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0Qblx4KPciZgP\nInXvXtMx7re/R0ewl00UbckJldJ5v4L0ylzqe4X19YADe6UDi5ET5VD2joUXDK8R\nNaZYE3R6FRL7OKBPyTcdacLJjdskIFYpJ5LTEM9DQJFI7xs9oiruRkvwTQSiHuyr\nHWTCCV0pOlnbEwrGZsC2bfoazei44SR0YpiFfzVA5iG5IWtFERtVXBGb3JI3P1da\nn7lxk5MuHHyZfas+8E+7rcXF0p6spbyUOnzSQLdKaCDBprN/GRc/AZuN9v94jlgg\nBQupB6u7zkZkiB3iw850eymnhKzPAkU0AMwVs1frN4BWJs+rI17gRWKEbwFfgsAU\n0fhTaS2nAgMBAAECggEAD2v8GLEWc9zVxJ23J1aejQwWbmgDyyj2sEPASnCmBEKN\nSrIxhuIwkN2DKUkf0hDTxbb92UpSOqmcJMXJSInJklRRPmsW1Byr+Xk98A6R7CJU\nHMtE9Yffo6pXg7zpQLmqIJ6lCpccSV6J8w3du/gfH1Ldsy+K4XSTEkiQeFCbk42S\nnzMY9FkyuAd1yhtroJMqDnONFs+KcfXWmrevGsDqnWtxDZS0FJn/w8+LOescaPSb\n4UroVFubyn3/0TuZvznrNtUqoWEPFf+Du7ift3EoN1pFccoI0npAMGAT4Hpp709j\n+QXZczHXl9zV9D4qW93KmSqvsIeKKbCbvPMVXiSiOQKBgQDvRRWcv44sewIdu1i3\n8gvAoBYlL56jrtl7pc0YVwHEzJh/DNpxfnd163nHJ06Z9a5ow3jY4h19gySub9kv\npcvOBi4Q/IPR/emnKLhbBJls6j0UHD4Kmz+k9pDrIb0MEiHJO6kUwYetLN57OxvV\npOx3nbJQZUGHXqycW3uzthEDdQKBgQDA3E8H8X3WiimyYEHLqOliH0LuXpt4wo1f\nIMn2asnPjXscgQGRoMhHFGagc/Khf6DzkxVNOQ4UYWlrUsnFphb6v6J7+oV3B74L\nFSSg7udAqtPdfoIdTPI2EI3G4BOVJ0n8M8vkY/RiwW7OiqtXzYBYN8lRcEEfi7x1\n7VlEVJEVKwKBgG2Pa7MHv5k8hh6JH7my2pDMfPdwE6sNsEY/CGfBx2yO5rEeeJQJ\nfbgAKBX6OLKk3cTY5OgiubA0McKyMnfv6h+fks5yYgXwx2Gkcq4yr/JAW9FukTYY\nGo9126vfGgqB7viPGgAIEhFI/2LcEQXF7AVlrzXC97t9rXo3JbCHiMjVAoGBAJt5\nv5iWvSyUS1MKuGAXtrWsoAeMa2ep59A1nbsykajp1MLA2WPuKybqMmXNs18wha92\n9mg/w7L4aMTlg9X7tHDGxpWN+8RekH1cuR+oGPOQA6Z/EyPN4UFmjPUztXW7q7BO\njWN8lQp8B/kn30O0XnA/4OLvTQDCZNbo1dr5FdDrAoGBAIY53KATtO5/AK83eDS7\nrvND212H0GM8M97+cVeiQnfH0kpeImxrFJOk38u8RudsXSrt9PZsHoXIP4QCL4nw\ngZCPXs/+OTsttoLS3mAwcGm5JRSmU4rkjvfbIhXp9yeA16ovU4gsRm4BulHnIlJV\nTKlYwg8ZMkCIpA+pLH+Jk/3f\n-----END PRIVATE KEY-----\n'
+  FIREBASE_CLIENT_EMAIL: 'firebase-adminsdk-fbsvc@mw-admin-136e3.iam.gserviceaccount.com'
+  FIREBASE_CLIENT_ID: '115692065202837349923'
+  FIREBASE_AUTH_URI: 'https://accounts.google.com/o/oauth2/auth'
+  FIREBASE_TOKEN_URI: 'https://oauth2.googleapis.com/token'
+  FIREBASE_AUTH_PROVIDER_X509_CERT_URL: 'https://www.googleapis.com/oauth2/v1/certs'
+  FIREBASE_CLIENT_X509_CERT_URL: 'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40mw-admin-136e3.iam.gserviceaccount.com'
+  FIREBASE_UNIVERSE_DOMAIN: 'googleapis.com'

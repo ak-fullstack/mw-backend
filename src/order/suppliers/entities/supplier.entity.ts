@@ -21,11 +21,18 @@ export class Supplier {
   @Column({ type: 'text', nullable: true })
   address?: string;
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+    createdAt: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
+    })
+    updatedAt: Date;
 
   @OneToMany(() => StockPurchase, purchase => purchase.supplier)
   stockPurchases: StockPurchase[];

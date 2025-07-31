@@ -14,6 +14,7 @@ import { OtpService } from './otp/otp.service';
 import { Otp } from './otp/entities/otp.entity';
 import { VerifyUserOtpDto } from './dto/verify-user-otp.dto';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { WalletService } from 'src/customer/wallet/wallet.service';
 
 
 
@@ -32,6 +33,7 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailsService,
     private customerService: CustomerService,
+    private walletService:WalletService,
     private otpService: OtpService,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
@@ -174,6 +176,9 @@ export class AuthService {
             lastName: customerDetails.family_name,
           });
           customer = await this.customerRepository.save(customer);
+            await this.walletService.createWalletForCustomer(customer.id);
+
+          //call a function in wallet service to create a wallet for the customer
         }
 
         return this.setCustomerToken(customer, res);

@@ -10,7 +10,7 @@ export class StockMovement {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Stock, {  nullable: false,eager: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Stock, { nullable: false, eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stockId' })
   stock: Stock;
 
@@ -30,7 +30,7 @@ export class StockMovement {
 
   @Column({ type: 'enum', enum: StockStage })
   to: StockStage;
-  
+
   @Column({ nullable: true })
   movedBy: string;
 
@@ -38,6 +38,16 @@ export class StockMovement {
   remarks: string;
 
 
-  @CreateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }

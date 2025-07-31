@@ -7,6 +7,8 @@ import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { OrderStatus } from 'src/enum/order-status.enum';
 import { StockMovement } from 'src/inventory/stock-movements/entities/stock-movement.entity';
 import { Return } from 'src/order/returns/entities/return.entity';
+import { WalletTransaction } from 'src/customer/wallet-transaction/entities/wallet-transaction.entity';
+import { DecimalToNumber } from 'src/common/transformers/decimal-transformer';
 
 
 @Entity('orders')
@@ -14,8 +16,10 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  customerId: number;
+
+  @ManyToOne(() => Customer, customer => customer.orders, { nullable: false })
+  @JoinColumn({ name: 'customerId' })
+  customer: Customer;
 
   @Column({
     type: 'enum',
@@ -31,7 +35,7 @@ export class Order {
   })
   paymentStatus: PaymentStatus;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: true, unique: true })
   razorpayOrderId: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -43,20 +47,32 @@ export class Order {
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
   totalDiscount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
   totalAmount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true,transformer: DecimalToNumber })
   paidAmount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
   subTotal: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  deliveryCharge: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
   totalTax: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  originalSubtotal: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  totalDeliveryTax: number;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  totalItemTax: number;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   billingName: string;
@@ -122,15 +138,18 @@ export class Order {
   @Column({ type: 'timestamp', nullable: true })
   paidAt: Date;
 
-  @CreateDateColumn()
+    @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
-
-  @ManyToOne(() => Customer, customer => customer.orders, { nullable: false })
-  @JoinColumn({ name: 'customerId' })
-  customer: Customer;
 
   @OneToMany(() => Payment, payment => payment.order, { cascade: true })
   payments: Payment[];
@@ -145,7 +164,6 @@ export class Order {
   @JoinColumn({ name: 'replacementForOrderId' })
   originalOrder: Order;
 
-  // Reverse side: One order may have many replacements
   @OneToMany(() => Order, order => order.originalOrder)
   replacementOrders: Order[];
 
@@ -160,6 +178,28 @@ export class Order {
 
   @Column({ type: 'datetime', nullable: true })
   deliveredAt: Date;
+
+  @Column({
+  type: 'enum',
+  enum: ['wallet', 'razorpay', 'wallet+razorpay', 'none'],
+  default: 'razorpay',
+})
+paymentSource: 'wallet' | 'razorpay' | 'wallet+razorpay' | 'none';
+
+@Column({ type: 'boolean', default: false })
+usedWallet: boolean;
+
+@Column({ type: 'decimal', precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+walletAmountUsed: number;
+
+@Column({ type: 'decimal', precision: 10, scale: 2, nullable: true,transformer: DecimalToNumber })
+razorpayAmountPaid: number;
+
+@Column({ type: 'boolean', default: false })
+isZeroPayment: boolean; // For replacement orders or free offers
+
+  @OneToMany(() => WalletTransaction, tx => tx.order)
+  walletTransactions: WalletTransaction[];
 
 
   get fullBillingAddress(): string {

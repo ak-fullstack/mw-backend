@@ -46,11 +46,18 @@ export class User {
   @Column({ nullable: true })
   roleId: number;
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+    createdAt: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
+    @Column({
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
+    })
+    updatedAt: Date;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus;

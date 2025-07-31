@@ -4,13 +4,10 @@ import * as bcrypt from 'bcryptjs';
 import { State } from 'src/enum/states.enum';
 import { CustomerAddress } from '../customer-address/entities/customer-address.entity';
 import { Order } from 'src/order/orders/entities/order.entity';
+import { Wallet } from '../wallet/entities/wallet.entity';
+import { RoleEnum } from 'src/enum/roles.enum';
 
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  CUSTOMER = 'CUSTOMER',
-  FAM_MEMBER = 'FAM_MEMBER',
-  GUEST = 'GUEST',
-}
+
 
 @Entity('customers')
 // @Unique(["motoFamId"])  // Ensure motoFamId is unique
@@ -45,36 +42,39 @@ export class Customer {
   // role is a fixed value "FAM_MEMBER"
   @Column({
     type: 'enum',
-    enum: UserRole,
-    default: UserRole.FAM_MEMBER,
+    enum: RoleEnum,
+    default: RoleEnum.CUSTOMER,
   })
-  role: UserRole;
+  role: RoleEnum;
 
   @Column({ length: 255, nullable: true })
   profileImageUrl: string;
 
-  @OneToMany(() => CustomerAddress, (address) => address.customer, { cascade: true, eager: true })
+  @OneToMany(() => CustomerAddress, (address) => address.customer, { cascade: true, eager: true, onDelete:'CASCADE' })
   addresses: CustomerAddress[];
 
-  @OneToOne(() => CustomerAddress, { nullable: true, eager: true })
-  @JoinColumn({ name: 'billingAddressId' })
+  @OneToOne(() => CustomerAddress, { nullable: true, eager: true,onDelete:'CASCADE' })
+  @JoinColumn()
   billingAddress: CustomerAddress;
 
-  @OneToOne(() => CustomerAddress, { nullable: true, eager: true })
-  @JoinColumn({ name: 'shippingAddressId' })
+  @OneToOne(() => CustomerAddress, { nullable: true, eager: true,onDelete:'CASCADE' })
+  @JoinColumn()
   shippingAddress: CustomerAddress;
 
-  @Column({ nullable: true })
-  billingAddressId: number;
-
-  @Column({ nullable: true })
-  shippingAddressId: number;
 
 
-  @CreateDateColumn()
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
 
   @Column({ select: false, nullable: true })
@@ -83,6 +83,9 @@ export class Customer {
 
   @OneToMany(() => Order, order => order.customer)
   orders: Order[];
+
+  @OneToOne(() => Wallet, wallet => wallet.customer)
+  wallet: Wallet;
 
   async comparePassword(inputPassword: string): Promise<boolean> {
 

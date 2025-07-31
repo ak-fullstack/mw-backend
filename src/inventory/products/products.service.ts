@@ -26,7 +26,7 @@ export class ProductsService {
     try {
       // 1. Validate SubCategory belongs to Category
       const subCategory = await queryRunner.manager.findOne(Subcategory, {
-        where: { id: createProductDto.subCategory.id, category: { id: createProductDto.category.id } },
+        where: { id: createProductDto.subCategoryId, category: { id: createProductDto.categoryId } },
         relations: ['category'],
       });
 
@@ -36,8 +36,8 @@ export class ProductsService {
 
       // 2. Create the Product
       const product = new Product();
-      product.category = { id: createProductDto.category.id } as any;
-      product.subCategory = { id: createProductDto.subCategory.id } as any;
+      product.category = { id: createProductDto.categoryId } as any;
+      product.subCategory = { id: createProductDto.subCategoryId } as any;
       product.name = createProductDto.productName;
       product.description = createProductDto.productDescription;
       product.has_sizes = createProductDto.hasSize;
@@ -131,15 +131,4 @@ export class ProductsService {
     return this.productRepo.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
-  }
-
-  update(id: number, updateProductDto: any) {
-    return `This action updates a #${id} product`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} product`;
-  }
 }

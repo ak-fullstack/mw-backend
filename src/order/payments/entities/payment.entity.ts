@@ -16,7 +16,7 @@ export class Payment {
   @Column({ type: 'varchar', length: 50, default: 'created' })
   status: string;
 
-  @ManyToOne(() => Order, order => order.payments,{ onDelete: 'CASCADE' })
+  @ManyToOne(() => Order, order => order.payments, { onDelete: 'CASCADE' })
   order: Order;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
@@ -25,9 +25,21 @@ export class Payment {
   @OneToMany(() => Refund, refund => refund.payment)
   refunds: Refund[];
 
-  @CreateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-   @Column({ type: 'timestamp', nullable: true })
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
   paidAt: Date;
+
+
 }

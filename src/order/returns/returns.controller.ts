@@ -12,27 +12,39 @@ import { StockStage } from 'src/enum/stock-stages.enum';
 import { ReturnStatus } from 'src/enum/return-status.enum';
 import { ReturnItemStatus } from 'src/enum/return-items-status.enum';
 import { VerifyReturnItemsDto } from './dto/verify-return-items-dto';
+import { ApproveReturnDto } from './dto/approve-return.dto';
+import { RoleEnum } from 'src/enum/roles.enum';
 
 @Controller('returns')
 export class ReturnsController {
   constructor(private readonly returnsService: ReturnsService) { }
 
-  @Get('get-all-returns')
+  @Get('get-return-requests')
+  async getReturnRequests() {
+    return await this.returnsService.getReturnRequests();
+  }
+
+   @Get('get-all-returns')
   async getAllReturns() {
     return await this.returnsService.getAllReturns();
   }
 
+  @Get('get-received-returns')
+  async getReceivedReturns() {
+    return await this.returnsService.getAllReturns(ReturnStatus.RETURN_RECEIVED);
+  }
+
   @Get('waiting-approval')
-async getWaitingApprovalReturns() {
-  return this.returnsService.getWaitingApprovalReturns();
-}
+  async getWaitingApprovalReturns() {
+    return this.returnsService.getWaitingApprovalReturns();
+  }
 
   @Post('request-return')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   async createReturn(@Req() req, @Body() createReturnDto: CreateReturnDto) {
-    const customerId = req.user?.userId; // assuming JWT has user.id
-    return this.returnsService.create(createReturnDto, customerId);
+    const customerId = req.user?.userId;
+    return this.returnsService.createReturn(createReturnDto, customerId);
   }
 
   @Get('get-return-by-id/:id')
@@ -40,20 +52,30 @@ async getWaitingApprovalReturns() {
     return await this.returnsService.getReturnById(id);
   }
 
+  @Patch('move-to-return_accepted')
+  moveFromRequestedToAccepted(@Body() updateOrderStausDto: UpdateReturnStatusDto) {
+    return this.returnsService.updateReturnStatus(updateOrderStausDto, StockStage.DELIVERED, StockStage.RETURN_ACCEPTED, ReturnStatus.RETURN_REQUESTED, ReturnStatus.RETURN_ACCEPTED, ReturnItemStatus.RETURN_ACCEPTED);
+  }
+
   @Patch('move-to-return_intransit')
-    moveFromRequestedToIntransit(@Body() updateOrderStausDto: UpdateReturnStatusDto) {
-      return this.returnsService.updateReturnStatus(updateOrderStausDto, StockStage.DELIVERED, StockStage.IN_TRANSIT_TO_SELLER,ReturnStatus.RETURN_REQUESTED, ReturnStatus.RETURN_IN_TRANSIT,ReturnItemStatus.RETURN_IN_TRANSIT);
-    }
+  moveFromRequestedToIntransit(@Body() updateOrderStausDto: UpdateReturnStatusDto) {
+    return this.returnsService.updateReturnStatus(updateOrderStausDto, StockStage.RETURN_ACCEPTED, StockStage.IN_TRANSIT_TO_SELLER, ReturnStatus.RETURN_ACCEPTED, ReturnStatus.RETURN_IN_TRANSIT, ReturnItemStatus.RETURN_IN_TRANSIT);
+  }
 
-    @Patch('move-to-return_received')
-    moveFromIntransitToReceived(@Body() updateOrderStausDto: UpdateReturnStatusDto) {
-      return this.returnsService.updateReturnStatus(updateOrderStausDto, StockStage.IN_TRANSIT_TO_SELLER, StockStage.RETURNED,ReturnStatus.RETURN_IN_TRANSIT, ReturnStatus.RETURN_RECEIVED,ReturnItemStatus.RETURN_RECEIVED);
-    }
+  @Patch('move-to-return_received')
+  moveFromIntransitToReceived(@Body() updateOrderStausDto: UpdateReturnStatusDto) {
+    return this.returnsService.updateReturnStatus(updateOrderStausDto, StockStage.IN_TRANSIT_TO_SELLER, StockStage.RETURNED, ReturnStatus.RETURN_IN_TRANSIT, ReturnStatus.RETURN_RECEIVED, ReturnItemStatus.RETURN_RECEIVED);
+  }
 
-    @Post('move-to-approval')
-verifyReturnItems(@Body() body: VerifyReturnItemsDto) {
-  return this.returnsService.verifyAndMoveItems(body);
-}
+  @Post('move-to-approval')
+  verifyReturnItems(@Body() body: VerifyReturnItemsDto) {
+    return this.returnsService.verifyAndMoveItems(body);
+  }
+
+  @Post('approve-return')
+  approveReturn(@Body() body: ApproveReturnDto) {
+    return this.returnsService.processReturn(body);
+  }
 
 
 }

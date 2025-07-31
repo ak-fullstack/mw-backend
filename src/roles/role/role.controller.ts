@@ -5,6 +5,7 @@ import { permission } from 'process';
 import { RequirePermissions } from 'src/decorators/permission.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
+import { PermissionEnum } from 'src/enum/permissions.enum';
 
 @Controller('role')
 export class RoleController {
@@ -14,7 +15,7 @@ export class RoleController {
 
   @Post('create-role')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('CREATE_ROLE')
+  @RequirePermissions(PermissionEnum.CREATE_ROLE)
   async create(@Body() createRoleDto: CreateRoleDto) {
     try {
       const newRole = await this.roleService.createRole(createRoleDto);
@@ -33,14 +34,14 @@ export class RoleController {
 
   @Get('get-all-roles-with-permissions')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('READ_ROLE')
+  @RequirePermissions(PermissionEnum.READ_ROLE)
   async getAllRoles() {
     return await this.roleService.getAllRolesWithPermissions();
   }
 
   @Delete('delete-role/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('DELETE_ROLE')
+  @RequirePermissions(PermissionEnum.DELETE_ROLE)
   deleteRole(@Param('id', ParseIntPipe) id: number) {
     return this.roleService.deleteRole(id);
   }

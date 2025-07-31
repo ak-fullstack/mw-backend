@@ -1,38 +1,74 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 
 @Injectable()
-export class RedisService {
+export class RedisService implements OnModuleInit{
   private readonly redisClient: Redis;
   
 
-  constructor(private readonly configService: ConfigService) {
-    // Initialize the Redis client
-    this.redisClient = new Redis({
-      host: 'localhost',  // Redis host
-      port: 6379,         // Redis port (default is 6379)
-    });
+constructor(private readonly configService: ConfigService) {
+  this.redisClient = new Redis({
+    host: this.configService.get<string>('REDIS_HOST'),
+    port: Number(this.configService.get<string>('REDIS_PORT')),
+    password: this.configService.get<string>('REDIS_PASSWORD'),
+    tls: this.configService.get<string>('REDIS_TLS') === 'true' ? {} : undefined,
+  });
 
-    this.setToken('1', 'testToken'); // Example usage of setToken method
-  }
+  // Log successful connection
+  this.redisClient.on('connect', () => {
+    console.log('✅ Redis is trying to connect...');
+  });
 
-  // Set token with expiration time (in seconds)
-  async setToken(userId: string, token: string): Promise<void> {
-    const ttl = this.configService.get<string>('REDIS_TOKEN_TTL');
-    const ttlValue = ttl ? parseInt(ttl, 10) : 3600; 
-    await this.redisClient.setex(`session:${userId}`, ttlValue, token); 
-  }
+  // Log once connection is ready
+  this.redisClient.on('ready', () => {
+    console.log('✅ Redis connection established and ready to use');
+    console.log(new Date());
+    
+  });
 
-  // Get token for a specific user
-  async getToken(userId: string): Promise<string | null> {
-    return await this.redisClient.get(`session:${userId}`);
-  }
+  // Log disconnections
+  this.redisClient.on('end', () => {
+    console.log('🚪 Redis connection closed');
+  });
 
-  // Delete token for a specific user
-  async deleteToken(userId: string): Promise<void> {
-    await this.redisClient.del(`session:${userId}`);
+  // Log any error
+  this.redisClient.on('error', (err) => {
+    console.error('❌ Redis connection error:', err.message);
+    console.error('🔍 Full error:', err);
+  });
+}
+
+   async onModuleInit() {
+    // await this.setToken('1', 'testToken','admin');
   }
+  
+
+async setToken(
+  userId: string,
+  token: string,
+  type: 'customer' | 'admin' | 'refresh'
+): Promise<void> {
+  const ttl = this.configService.get<string>('REDIS_TOKEN_TTL');
+  const ttlValue = ttl ? parseInt(ttl, 10) : 3600;
+
+  const redisKey = `session:${type}:${userId}`;
+  const result = await this.redisClient.setex(redisKey, ttlValue, token);
+
+  if (result === 'OK') {
+    console.log(`✅ ${type} token set for user ${userId} (expires in ${ttlValue}s)`);
+  } else {
+    console.error(`❌ Failed to set ${type} token for user ${userId}`);
+  }
+}
+
+ async getToken(userId: string, type: 'customer' | 'admin' | 'refresh' = 'customer'): Promise<string | null> {
+  return await this.redisClient.get(`session:${type}:${userId}`);
+}
+
+  async deleteToken(userId: string, type: 'customer' | 'admin' | 'refresh' = 'customer'): Promise<void> {
+  await this.redisClient.del(`session:${type}:${userId}`);
+}
 }
 

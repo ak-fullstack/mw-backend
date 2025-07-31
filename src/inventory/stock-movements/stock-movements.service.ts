@@ -140,11 +140,12 @@ async createMovements(
     [stockId, stage, stockId, stage]
   );
 
-  return Number(result[0]?.totalQuantity ?? 0);
+  return Number(result[0]?.totalQuantity ?? 0); 
 }
 
 
 getStockStages(): string[] {
-  return Object.values(StockStage);
+  return Object.values(StockStage).filter(stage => stage !== StockStage.SUPPLIER);
 }
+
 }

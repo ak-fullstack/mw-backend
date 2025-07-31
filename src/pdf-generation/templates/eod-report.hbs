@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>End of Day Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .section {
+      background: #fff;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .section h2 {
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #007bff;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+    .label {
+      font-weight: bold;
+      color: #555;
+    }
+    .value {
+      color: #222;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>End of Day Report</h1>
+
+  <div class="section">
+    <h2>Order Summary</h2>
+    <div class="row"><span class="label">Order Count:</span><span class="value">{{order.orderCount}}</span></div>
+    <div class="row"><span class="label">Total Order Value:</span><span class="value">₹{{order.totalOrderValue}}</span></div>
+    <div class="row"><span class="label">Total Discount:</span><span class="value">₹{{order.totalDiscount}}</span></div>
+    <div class="row"><span class="label">Delivery Charge:</span><span class="value">₹{{order.totalDelvieryCharge}}</span></div>
+    <div class="row"><span class="label">Amount Collected:</span><span class="value">₹{{order.totalAmountCollected}}</span></div>
+    <div class="row"><span class="label">CGST:</span><span class="value">₹{{order.totalCgst}}</span></div>
+    <div class="row"><span class="label">SGST:</span><span class="value">₹{{order.totalSgst}}</span></div>
+    <div class="row"><span class="label">IGST:</span><span class="value">₹{{order.totalIgst}}</span></div>
+    <div class="row"><span class="label">Total Tax:</span><span class="value">₹{{order.totalTax}}</span></div>
+  </div>
+
+  <div class="section">
+    <h2>Refund Summary</h2>
+    <div class="row"><span class="label">Refund Count:</span><span class="value">{{refund.refundCount}}</span></div>
+    <div class="row"><span class="label">Refund Value:</span><span class="value">₹{{refund.refundValue}}</span></div>
+    <div class="row"><span class="label">Amount Refunded:</span><span class="value">₹{{refund.refundAmountCollcted}}</span></div>
+    <div class="row"><span class="label">Refund CGST:</span><span class="value">₹{{refund.refundCgst}}</span></div>
+    <div class="row"><span class="label">Refund SGST:</span><span class="value">₹{{refund.refundSgst}}</span></div>
+    <div class="row"><span class="label">Refund IGST:</span><span class="value">₹{{refund.refundIgst}}</span></div>
+    <div class="row"><span class="label">Refund Tax:</span><span class="value">₹{{refund.refundTax}}</span></div>
+    <div class="row"><span class="label">Refund Delivery Charge:</span><span class="value">₹{{refund.refundDeliveryCharge}}</span></div>
+  </div>
+
+  <div class="section">
+    <h2>Net Collection</h2>
+    <div class="row"><span class="label">Net Value:</span><span class="value">₹{{netCollection.netValue}}</span></div>
+    <div class="row"><span class="label">Net Amount Collected:</span><span class="value">₹{{netCollection.netAmountCollected}}</span></div>
+    <div class="row"><span class="label">Net Delivery Charge:</span><span class="value">₹{{netCollection.netDeliveryCharge}}</span></div>
+    <div class="row"><span class="label">Net CGST:</span><span class="value">₹{{netCollection.netCgst}}</span></div>
+    <div class="row"><span class="label">Net SGST:</span><span class="value">₹{{netCollection.netSgst}}</span></div>
+    <div class="row"><span class="label">Net IGST:</span><span class="value">₹{{netCollection.netIgst}}</span></div>
+    <div class="row"><span class="label">Net Tax:</span><span class="value">₹{{netCollection.netTax}}</span></div>
+  </div>
+
+  <div class="section">
+    <h2>Top Selling Product</h2>
+    <div class="row"><span class="label">Product Name:</span><span class="value">{{topProduct.name}}</span></div>
+    <div class="row"><span class="label">Product ID:</span><span class="value">{{topProduct.productId}}</span></div>
+    <div class="row"><span class="label">Quantity Sold:</span><span class="value">{{topProduct.quantitySold}}</span></div>
+  </div>
+
+</body>
+</html>

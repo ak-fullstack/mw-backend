@@ -9,16 +9,16 @@ export class CustomerAddress {
   @PrimaryGeneratedColumn()
   id: number;
 
-@Column({ type: 'text', nullable: true })
-streetAddress: string;
+  @Column({ type: 'text', nullable: true })
+  streetAddress: string;
 
-@Column({
-  length: 255,
-  generatedType: 'STORED',
-  asExpression: "CONCAT(streetAddress, ', ', city, ', ', state, ', ', country, ', ', pincode)",
-  nullable: true,
-})
-fullAddress: string;
+  @Column({
+    length: 255,
+    generatedType: 'STORED',
+    asExpression: "CONCAT(streetAddress, ', ', city, ', ', state, ', ', country, ', ', pincode)",
+    nullable: true,
+  })
+  fullAddress: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   city: string;
@@ -29,7 +29,7 @@ fullAddress: string;
   @Column({ type: 'varchar', length: 6, nullable: true })
   pincode: string;
 
-  @Column({ type: 'varchar', length: 6,  default: 'India' })
+  @Column({ type: 'varchar', length: 6, default: 'India' })
   country: string;
 
   @ManyToOne(() => Customer, (customer) => customer.addresses, { onDelete: 'CASCADE' })
@@ -38,5 +38,18 @@ fullAddress: string;
 
   @Column()
   customerId: number;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt: Date;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 
 }

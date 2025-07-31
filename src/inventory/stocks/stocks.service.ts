@@ -23,57 +23,60 @@ export class StocksService {
   ) { }
 
   async create(createStockdto: CreateStockDto) {
-  return this.dataSource.transaction(async (manager) => {
-    const purchase = manager.create(StockPurchase, {
-      billRefNo: createStockdto.billRefNo,
-      supplier: { id: createStockdto.supplierId },
-      purchaseDate: createStockdto.purchaseDate,
-      totalAmount: createStockdto.totalAmount,
-      totalTax: createStockdto.totalTax,
-      subTotal: createStockdto.subTotal,
-      invoicePdfUrl: createStockdto.invoicePdfUrl,
-      gstType: createStockdto.gstType,
+    return this.dataSource.transaction(async (manager) => {
+      const purchase = manager.create(StockPurchase, {
+        billRefNo: createStockdto.billRefNo,
+        supplier: { id: createStockdto.supplierId },
+        purchaseDate: createStockdto.purchaseDate,
+        totalAmount: createStockdto.totalAmount,
+        totalTax: createStockdto.totalTax,
+        subTotal: createStockdto.subTotal,
+        invoicePdfUrl: createStockdto.invoicePdfUrl,
+        gstType: createStockdto.gstType,
+      });
+
+      const savedPurchase = await manager.save(StockPurchase, purchase);
+
+
+
+      const stockEntities = createStockdto.variants.map((v: any) => {
+        const stock = new Stock();
+        stock.purchase = savedPurchase;
+        stock.productVariant = { id: v.variantId } as any;
+        stock.quantity = v.quantity;
+        stock.ctc = v.ctc;
+        stock.mrp = v.mrp;
+        stock.sp = v.sp;
+        stock.discount = v.discount;
+        stock.cgst = v.cgst;
+        stock.sgst = v.sgst;
+        stock.igst = v.igst;
+        stock.igstAmount = v.igstAmount;
+        stock.cgstAmount = v.cgstAmount;
+        stock.sgstAmount = v.sgstAmount;
+        stock.subTotal = v.subTotal;
+        stock.totalTax = v.totalTax;
+        stock.totalAmount = v.totalAmount;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + Number(v.expiryDays));
+        stock.expiryDate = expiry;
+        return stock;
+      });
+
+      const savedStocks = await manager.save(Stock, stockEntities);
+
+      const movements = savedStocks.map((stock) => ({
+        stockId: stock.id,
+        quantity: stock.quantity,
+        from: StockStage.SUPPLIER,
+        to: StockStage.AVAILABLE,
+      }));
+
+      await this.stockMovementsService.createMovements(movements, manager);
+
+      return { success: true, purchaseId: savedPurchase.id };
     });
-
-    const savedPurchase = await manager.save(StockPurchase, purchase);
-
-   
-
-    const stockEntities = createStockdto.variants.map((v: any) => {
-      const stock = new Stock();
-      stock.purchase = savedPurchase;
-      stock.productVariant = { id: v.variantId } as any;
-      stock.quantity = v.quantity;
-      stock.ctc = v.ctc;
-      stock.mrp = v.mrp;
-      stock.sp = v.sp;
-      stock.discount = v.discount;
-      stock.cgst = v.cgst;
-      stock.sgst = v.sgst;
-      stock.igst = v.igst;
-      stock.igstAmount = v.igstAmount;
-      stock.cgstAmount = v.cgstAmount;
-      stock.sgstAmount = v.sgstAmount;
-      stock.subTotal = v.subTotal;
-      stock.totalTax = v.totalTax;
-      stock.totalAmount = v.totalAmount; 
-      return stock;
-    });
-
-    const savedStocks = await manager.save(Stock, stockEntities);
-   
-    const movements = savedStocks.map((stock) => ({
-      stockId: stock.id,
-      quantity: stock.quantity,
-      from: StockStage.SUPPLIER,
-      to: StockStage.AVAILABLE,
-    }));
-
-    await this.stockMovementsService.createMovements(movements, manager);
-
-    return { success: true, purchaseId: savedPurchase.id };
-  });
-}
+  }
 
 
 
@@ -83,6 +86,7 @@ export class StocksService {
         relations: ['productVariant', 'productVariant.product', 'productVariant.color', 'productVariant.size', 'productVariant.images', 'purchase'],
         select: {
           id: true,
+          sp:true,
           productVariant: {
             id: true,
             sku: true,
@@ -129,17 +133,17 @@ export class StocksService {
       const latestStocks = Array.from(latestStocksMap.values());
 
       const enrichedStocks = await Promise.all(
-      latestStocks.map(async (stock) => {
-        const available = await this.stockMovementsService.getNetQuantityForStockAndStage(stock.id, StockStage.AVAILABLE);
-        
-        return {
-          ...stock,
-          available,
-        };
-      })
-    );
+        latestStocks.map(async (stock) => {
+          const available = await this.stockMovementsService.getNetQuantityForStockAndStage(stock.id, StockStage.AVAILABLE);
 
-    return enrichedStocks;
+          return {
+            ...stock,
+            available,
+          };
+        })
+      );
+
+      return enrichedStocks;
 
       // return latestStocks.map(stock => ({
       //   ...stock,
@@ -154,50 +158,50 @@ export class StocksService {
 
 
   async getStocksByIds(stockRequests: { stockId: number; quantity: number }[]) {
-  const stockIds = stockRequests.map(item => item.stockId);
+    const stockIds = stockRequests.map(item => item.stockId);
 
-  const stocks = await this.stockRepository.find({
-    where: { id: In(stockIds) },
-    relations: [
-      'productVariant',
-      'productVariant.product',
-      'productVariant.size',
-      'productVariant.color',
-      'productVariant.images',
-    ],
-  });
+    const stocks = await this.stockRepository.find({
+      where: { id: In(stockIds) },
+      relations: [
+        'productVariant',
+        'productVariant.product',
+        'productVariant.size',
+        'productVariant.color',
+        'productVariant.images',
+      ],
+    });
 
-  const result = await Promise.all(
-    stockRequests.map(async request => {
-      const stock = stocks.find(s => s.id === request.stockId);
-      if (!stock) return null;
+    const result = await Promise.all(
+      stockRequests.map(async request => {
+        const stock = stocks.find(s => s.id === request.stockId);
+        if (!stock) return null;
 
-      const available = await this.stockMovementsService.getNetQuantityForStockAndStage(
-        stock.id,
-        StockStage.AVAILABLE,
-      );
+        const available = await this.stockMovementsService.getNetQuantityForStockAndStage(
+          stock.id,
+          StockStage.AVAILABLE,
+        );
 
-      return {
-        stockId: stock.id,
-        cgst: stock.cgst,
-        sgst: stock.sgst,
-        igst: stock.igst,
-        quantity: request.quantity,
-        sp: stock.sp,
-        mrp: stock.mrp,
-        discount: stock.discount,
-        productName: stock.productVariant.product.name,
-        description: stock.productVariant.product.description,
-        size: stock.productVariant.size?.label ?? null,
-        color: stock.productVariant.color?.name ?? null,
-        image: stock.productVariant.images?.[0]?.imageUrl ?? null,
-        available: available,
-      };
-    })
-  );
+        return {
+          stockId: stock.id,
+          cgst: stock.cgst,
+          sgst: stock.sgst,
+          igst: stock.igst,
+          quantity: request.quantity,
+          sp: stock.sp,
+          mrp: stock.mrp,
+          discount: stock.discount,
+          productName: stock.productVariant.product.name,
+          description: stock.productVariant.product.description,
+          size: stock.productVariant.size?.label ?? null,
+          color: stock.productVariant.color?.name ?? null,
+          image: stock.productVariant.images?.[0]?.imageUrl ?? null,
+          available: available,
+        };
+      })
+    );
 
-  return result.filter(Boolean);
-}
+    return result.filter(Boolean);
+  }
 
 
   async approve(id: number): Promise<Stock> {
@@ -224,6 +228,16 @@ export class StocksService {
       throw new InternalServerErrorException('Stock must be approved before putting it on sale');
     }
     stock.onSale = !stock.onSale; // Toggle the onSale status
+    return this.stockRepository.save(stock);
+  }
+
+  async toggleDiscount(id: number): Promise<Stock> {
+    const stock = await this.stockRepository.findOne({ where: { id } });
+    if (!stock) throw new NotFoundException('Stock not found');
+    if (!stock.approved) {
+      throw new InternalServerErrorException('Stock must be approved before putting it on sale');
+    }
+    stock.applyDiscount = !stock.applyDiscount; // Toggle the onSale status
     return this.stockRepository.save(stock);
   }
 }

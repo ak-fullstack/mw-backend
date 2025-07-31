@@ -1,36 +1,46 @@
-export enum PermissionEnum  {
-    MASTER_PERMISSION= 'MASTER_PERMISSION',
+export enum PermissionEnum {
+  MASTER_PERMISSION = 'MASTER_PERMISSION',
 
-    CREATE_ROLE = 'CREATE_ROLE',
-    READ_ROLE = 'READ_ROLE',
-    DELETE_ROLE='DELETE_ROLE',
+  CREATE_ROLE = 'CREATE_ROLE',
+  READ_ROLE = 'READ_ROLE',
+  DELETE_ROLE = 'DELETE_ROLE',
 
-    // UPDATE_ROLE = 'UPDATE_ROLE',
-    // DELETE_ROLE = 'DELETE_ROLE',
-    
-    READ_DASHBOARD='READ_DASHBOARD',
+  // UPDATE_ROLE = 'UPDATE_ROLE',
+  // DELETE_ROLE = 'DELETE_ROLE',
 
-    READ_PERMISSION = 'READ_PERMISSION',
+  READ_DASHBOARD = 'READ_DASHBOARD',
 
-    CREATE_USER = 'CREATE_USER',
-    READ_USER = 'READ_USER',
+  READ_PERMISSION = 'READ_PERMISSION',
 
-    READ_CUSTOMER='READ_CUSTOMER',
-    READ_ORDER ='READ_ORDER',
+  CREATE_USER = 'CREATE_USER',
+  READ_USER = 'READ_USER',
+  UPDATE_USER = 'UPDATE_USER',
 
-    CREATE_PRODUCT='CREATE_PRODUCT',
+  READ_CUSTOMER = 'READ_CUSTOMER',
+  READ_ORDER = 'READ_ORDER',
 
-   UPDATE_PRODUCT_IMAGE = 'UPDATE_PRODUCT_IMAGE',
-   UPDATE_PRODUCT= 'UPDATE_PRODUCT',
+  CREATE_PRODUCT = 'CREATE_PRODUCT',
+
+  READ_PRODUCT = 'READ_PRODUCT',
+  UPDATE_PRODUCT_IMAGE = 'UPDATE_PRODUCT_IMAGE',
+  UPDATE_PRODUCT = 'UPDATE_PRODUCT',
+  DELETE_PRODUCT='DELETE_PRODUCT',
+
+  READ_REPORTS = 'READ_REPORTS',
+
+
+  READ_STOCK='READ_STOCK',
+  UPDATE_STOCK_APPROVAL='UPDATE_STOCK_APPROVAL',
+
+}
+
+function validateEnumUniqueness(enumObject: any) {
+  const values = Object.values(enumObject);
+  const uniqueValues = new Set(values);
+
+  if (values.length !== uniqueValues.size) {
+    throw new Error('Enum contains duplicate values');
   }
+}
 
-  function validateEnumUniqueness(enumObject: any) {
-    const values = Object.values(enumObject);
-    const uniqueValues = new Set(values);
-  
-    if (values.length !== uniqueValues.size) {
-      throw new Error('Enum contains duplicate values');
-    }
-  }
-  
-  validateEnumUniqueness(PermissionEnum);
+validateEnumUniqueness(PermissionEnum);

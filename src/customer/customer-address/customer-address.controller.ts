@@ -6,6 +6,7 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { State } from 'src/enum/states.enum';
+import { RoleEnum } from 'src/enum/roles.enum';
 
 @Controller('customer-address')
 export class CustomerAddressController {
@@ -13,14 +14,14 @@ export class CustomerAddressController {
 
   @Get('get-all-states')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   getAllStates(): string[] {
     return Object.values(State);
   }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   async addAddress(@Req() req, @Body() dto: CreateCustomerAddressDto) {
     const customerId = req.user.userId; 
 
@@ -31,19 +32,9 @@ export class CustomerAddressController {
     return this.customerAddressService.addAddress(customerId, dto);
   }
 
-  @Get()
-  findAll() {
-    return this.customerAddressService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customerAddressService.findOne(+id);
-  }
-
   @Patch()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('FAM_MEMBER')
+  @Roles(RoleEnum.CUSTOMER)
   async updateAddress(
     @Body() updateDto: UpdateCustomerAddressDto,
     @Req() req: any,
@@ -51,11 +42,5 @@ export class CustomerAddressController {
     const customerId = req.user.userId;
     return await this.customerAddressService.updateAddressIfOwned(customerId, updateDto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customerAddressService.remove(+id);
-  }
-
 
 }

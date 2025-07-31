@@ -1,0 +1,5 @@
+export enum ReturnResolutionMethod {
+  WALLET_REFUND = 'WALLET_REFUND',
+  SOURCE_REFUND = 'SOURCE_REFUND',
+  REPLACEMENT = 'REPLACEMENT',
+}

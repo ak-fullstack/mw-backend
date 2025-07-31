@@ -16,6 +16,8 @@ import { CustomerService } from 'src/customer/customer.service';
 import { OtpModule } from './otp/otp.module';
 import { Otp } from './otp/entities/otp.entity';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { WalletService } from 'src/customer/wallet/wallet.service';
+import { WalletModule } from 'src/customer/wallet/wallet.module';
 
 
 @Module({
@@ -25,6 +27,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
   imports:[
     // RedisModule,
     FirebaseModule,
+    WalletModule,
     TypeOrmModule.forFeature([Customer,Otp]),
     UserModule,
     JwtModule.registerAsync({
