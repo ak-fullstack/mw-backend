@@ -14,11 +14,12 @@ import { StockMovementsModule } from 'src/inventory/stock-movements/stock-moveme
 import { Return } from '../returns/entities/return.entity';
 import { ReturnsModule } from '../returns/returns.module';
 import { WalletModule } from 'src/customer/wallet/wallet.module';
+import { OrderSettingsModule } from 'src/settings/order-settings/order-settings.module';
 
 @Module({
   controllers: [OrdersController],
   providers: [OrdersService],
-imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress,Return]),RazorpayModule,QrCodeModule,StockMovementsModule,ReturnsModule,WalletModule],
+imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress,Return]),RazorpayModule,QrCodeModule,StockMovementsModule,ReturnsModule,WalletModule,OrderSettingsModule],
 exports:[OrdersService]
 })
 export class OrdersModule {}

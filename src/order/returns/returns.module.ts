@@ -8,11 +8,12 @@ import { ReturnItem } from '../return-items/entities/return-item.entity';
 import { StockMovementsModule } from 'src/inventory/stock-movements/stock-movements.module';
 import { WalletModule } from 'src/customer/wallet/wallet.module';
 import { ReturnImagesModule } from './return-images/return-images.module';
+import { OrderSettingsModule } from 'src/settings/order-settings/order-settings.module';
 
 @Module({
   controllers: [ReturnsController],
   providers: [ReturnsService],
-  imports:[TypeOrmModule.forFeature([ReturnItem,Return]),StockMovementsModule,WalletModule, ReturnImagesModule],
+  imports:[TypeOrmModule.forFeature([ReturnItem,Return]),StockMovementsModule,WalletModule, ReturnImagesModule,OrderSettingsModule],
   exports:[ReturnsService]
 })
 export class ReturnsModule {}

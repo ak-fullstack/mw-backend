@@ -21,6 +21,7 @@ import { from } from 'form-data';
 import { instanceToPlain } from 'class-transformer';
 import { WalletService } from 'src/customer/wallet/wallet.service';
 import { WalletTransaction, WalletTransactionReason } from 'src/customer/wallet-transaction/entities/wallet-transaction.entity';
+import { OrderSettingsService } from 'src/settings/order-settings/order-settings.service';
 
 @Injectable()
 export class OrdersService {
@@ -29,6 +30,7 @@ export class OrdersService {
     private readonly razorpayService: RazorpayService,
     private readonly stockMovementsService: StockMovementsService,
     private readonly walletService: WalletService,
+    private readonly orderSettingsService: OrderSettingsService,
 
     private readonly returnService: ReturnsService,
 
@@ -47,9 +49,11 @@ export class OrdersService {
   ) { }
 
   async create(createOrderDto: CreateOrderDto, customerId: number): Promise<any> {
+   
+
     return await this.dataSource.transaction(async (manager) => {
       const customer = await this.customerRepository.findOne({ where: { id: customerId } });
-
+     
 
       if (!customer) {
         throw new UnauthorizedException('Customer not found');
@@ -67,7 +71,7 @@ export class OrdersService {
       if (!shippingAddress) {
         throw new BadRequestException('Shipping address does not belong to the customer');
       }
-
+      
       const billingAddress = await this.customerAddressRepository.findOne({
         where: { id: createOrderDto.billingAddressId, customerId }
       });
@@ -84,6 +88,7 @@ export class OrdersService {
           throw new BadRequestException('Billing and shipping address IDs must be different when billingSameAsShipping is false');
         }
       }
+      
 
       const order = new Order();
       order.customer = customer;
@@ -115,7 +120,6 @@ export class OrdersService {
         order.totalItemTax = totalItemTax,
         order.deliveryCharge = deliveryCharge,
         order.items = orderItems;
-
       const paymentSource = createOrderDto.paymentSource;
       let finalRazorpayAmount = 0;
       if (paymentSource === 'wallet') {
@@ -161,6 +165,7 @@ export class OrdersService {
 
           razorPayOrderDetails = await this.razorpayService.createOrder(finalRazorpayAmount);
           order.razorpayOrderId = razorPayOrderDetails.id;
+
 
           savedOrder = await manager.save(Order, order);
         }
@@ -704,6 +709,7 @@ export class OrdersService {
       order: { createdAt: 'DESC' },
     });
 
+    const settings = await this.orderSettingsService.getSettings();
 
     return orders.map(order => {
       const items = order.items.map(item => ({
@@ -717,7 +723,9 @@ export class OrdersService {
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
       const isDelivered = order.orderStatus === OrderStatus.DELIVERED;
       const daysSinceOrder = (new Date().getTime() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-      const returnAvailable = isDelivered && daysSinceOrder <= 10;
+      const returnDays = settings.return_days ?? 10; // fallback to 10 if not set
+      const returnAvailable = isDelivered && daysSinceOrder <= returnDays;
+
 
       return {
         orderId: order.id,

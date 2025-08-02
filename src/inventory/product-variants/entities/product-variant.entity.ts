@@ -23,7 +23,7 @@ export class ProductVariant {
     @Column({ unique: true })
     sku: string;
 
-    @OneToMany(() => ProductImage, image => image.variant, { cascade: true })
+    @OneToMany(() => ProductImage, image => image.variant, { cascade: false })
     images: ProductImage[];
 
     @OneToMany(() => Stock, stock => stock.productVariant)

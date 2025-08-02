@@ -19,13 +19,14 @@ import { PdfGenerationModule } from './pdf-generation/pdf-generation.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { RedisModule } from './redis/redis.module';
 import { EodClosureModule } from './eod-closure/eod-closure.module';
+import { OrderSettingsModule } from './settings/order-settings/order-settings.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule, OrderSettingsModule],
   controllers: [AppController],
   providers: [AppService],
 })

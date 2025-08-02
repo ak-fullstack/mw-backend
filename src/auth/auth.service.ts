@@ -15,6 +15,8 @@ import { Otp } from './otp/entities/otp.entity';
 import { VerifyUserOtpDto } from './dto/verify-user-otp.dto';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { WalletService } from 'src/customer/wallet/wallet.service';
+import { PermissionEnum } from 'src/enum/permissions.enum';
+import { getMenuForUser } from 'src/common/utils/menu.util';
 
 
 
@@ -91,12 +93,18 @@ export class AuthService {
     if (!decodedPhone || decodedPhone !== user.phone) {
   throw new UnauthorizedException('Phone number mismatch');
 }
-        // return {};
+
+  const userPermissions: PermissionEnum[] = (user.role?.permissions || []).filter(p =>
+    Object.values(PermissionEnum).includes(p as PermissionEnum)
+  ) as PermissionEnum[];
+  
+  const filteredMenu = getMenuForUser(userPermissions);
+  
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
-      permissions: user.role.permissions
+      permissions: user.role.permissions,
     };
 
     const access_token = this.jwtService.sign(payload);
@@ -109,7 +117,8 @@ export class AuthService {
       status: user.status,
       profileImageUrl: user.profileImageUrl,
       phone: user.phone,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      menu:filteredMenu
     };
   }
 

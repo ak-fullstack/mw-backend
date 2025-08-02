@@ -50,7 +50,7 @@ export class Customer {
   @Column({ length: 255, nullable: true })
   profileImageUrl: string;
 
-  @OneToMany(() => CustomerAddress, (address) => address.customer, { cascade: true, eager: true, onDelete:'CASCADE' })
+  @OneToMany(() => CustomerAddress, (address) => address.customer, { cascade: false, eager: true, onDelete:'CASCADE' })
   addresses: CustomerAddress[];
 
   @OneToOne(() => CustomerAddress, { nullable: true, eager: true,onDelete:'CASCADE' })

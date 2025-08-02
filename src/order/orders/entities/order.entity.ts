@@ -44,7 +44,7 @@ export class Order {
   @Column({ type: 'varchar', length: 30, nullable: true })
   paymentMethod: string;
 
-  @OneToMany(() => OrderItem, item => item.order, { cascade: true })
+  @OneToMany(() => OrderItem, item => item.order, { cascade: false })
   items: OrderItem[];
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
@@ -151,7 +151,7 @@ export class Order {
   })
   updatedAt: Date;
 
-  @OneToMany(() => Payment, payment => payment.order, { cascade: true })
+  @OneToMany(() => Payment, payment => payment.order, { cascade: false })
   payments: Payment[];
 
   @OneToMany(() => StockMovement, (movement) => movement.order)

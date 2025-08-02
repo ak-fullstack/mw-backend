@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateReturnDto } from './dto/create-return.dto';
 import { UpdateReturnDto } from './dto/update-return.dto';
-import { Between, DataSource, EntityManager, LessThanOrEqual, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import { Between, DataSource, EntityManager, In, LessThanOrEqual, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { Order } from '../orders/entities/order.entity';
 import { OrderItem } from '../order-items/entities/order-item.entity';
 import { OrderStatus } from 'src/enum/order-status.enum';
@@ -20,6 +20,7 @@ import { ReturnResolutionMethod } from 'src/enum/resolution-method.enum';
 import { WalletService } from 'src/customer/wallet/wallet.service';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { ReturnImage } from './return-images/entities/return-image.entity';
+import { OrderSettingsService } from 'src/settings/order-settings/order-settings.service';
 
 @Injectable()
 export class ReturnsService {
@@ -30,6 +31,7 @@ export class ReturnsService {
     private readonly returnRepository: Repository<Return>,
     private stockMovementsService: StockMovementsService,
     private readonly walletService: WalletService, // Assuming you have a WalletService to handle wallet operations
+    private readonly orderSettingService: OrderSettingsService
   ) {
 
   }
@@ -82,13 +84,14 @@ export class ReturnsService {
       }
 
 
+      const settings = await this.orderSettingService.getSettings();
 
       const deliveryDate = new Date(order.deliveredAt);
       const today = new Date();
       const diffInDays = (today.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24);
-
-      if (diffInDays > 10) {
-        throw new BadRequestException('Return request is allowed only within 7 days of delivery');
+      const returnDays = settings.return_days ?? 10;
+      if (diffInDays > returnDays) {
+        throw new BadRequestException(`Return request is allowed only within ${returnDays} days of delivery`);
       }
 
       const orderItems = order.items;
@@ -129,8 +132,6 @@ export class ReturnsService {
         status: 'PENDING',
       });
 
-
-
       const savedReturn = await manager.save(Return, returnRequest);
 
       try {
@@ -159,6 +160,7 @@ export class ReturnsService {
             itemIgstAmount: calculatedData.itemIgstAmount,
             deliveryShare: calculatedData.deliveryShare,
             deliveryCharge: calculatedData.deliveryCharge,
+            discountAmount: calculatedData.discountAmount,
             deliveryCgstAmount: calculatedData.deliveryCgstAmount,
             deliverySgstAmount: calculatedData.deliverySgstAmount,
             deliveryIgstAmount: calculatedData.deliveryIgstAmount,
@@ -189,6 +191,7 @@ export class ReturnsService {
 
         await manager.save(ReturnImage, returnImages);
       }
+
 
       return { message: 'Return request Successfully created' }
     });
@@ -278,6 +281,7 @@ export class ReturnsService {
     const result = await this.returnRepository.findOne({
       where: { id },
       relations: [
+        'images',
         'items.orderItem.productVariant.product',
         'items.orderItem.productVariant.images',
         'items.orderItem.productVariant.size',
@@ -317,12 +321,15 @@ export class ReturnsService {
       // if (toReturnStatus === OrderStatus.DELIVERED) {
       //   orderReturn.deliveredAt = new Date()
       // }
+
       await manager.save(orderReturn);
 
       const returnItems = await manager.find(ReturnItem, {
         where: { returnRequest: { id: returnId } },
         relations: ['orderItem'],
       });
+
+
 
       if (!returnItems || returnItems.length === 0) {
         throw new BadRequestException('No return items found');
@@ -331,7 +338,15 @@ export class ReturnsService {
       for (const item of returnItems) {
         item.status = returnItemStatus; // replace with your actual status value
       }
-      await manager.save(ReturnItem, returnItems);
+      console.log(returnItems);
+
+      try {
+        await manager.save(ReturnItem, returnItems);
+      } catch (error) {
+        console.error('Error saving return items:', error);
+        throw new InternalServerErrorException('Failed to save return items');
+      } console.log('asdad');
+
       const movements = returnItems.map((returnItem) => ({
         stockId: returnItem.orderItem.stock.id,
         orderItemId: returnItem.orderItem.id,
@@ -364,107 +379,90 @@ export class ReturnsService {
         where: { id: returnId },
         relations: ['items', 'items.orderItem'],
       });
-        
+
       if (!returnRequest) {
         throw new NotFoundException(`ReturnRequest with ID ${returnId} not found`);
       }
 
-      const originalReturnItems = returnRequest.items;
+      const originReturnItems = returnRequest.items;
 
-      if (originalReturnItems.length === 0) {
+      if (returnRequest.items.length === 0) {
         throw new BadRequestException(`No return items found for returnId ${returnId}`);
       }
 
-      // Step 2: Group incoming items by returnItemId and sum their quantity
-      const groupedIncoming = incomingItems.reduce((acc, item) => {
-        acc[item.returnItemId] = (acc[item.returnItemId] || 0) + item.quantity;
-        return acc;
-      }, {} as Record<number, number>);
+      let itemQuantityMapping = {};
 
-      // Step 3: Compare each original returnItem with summed incoming quantity
-      for (const original of originalReturnItems) {
-        const incomingQty = groupedIncoming[original.id] || 0;
-        if (incomingQty !== original.quantity) {
-          throw new BadRequestException(
-            `Quantity mismatch for returnItemId ${original.id}: expected ${original.quantity}, received ${incomingQty}`
-          );
-        }
-      }
-
-      // Step 4: Validate for extra returnItemIds
-      const originalIds = new Set(originalReturnItems.map(i => i.id));
-      for (const returnItemId of Object.keys(groupedIncoming)) {
-        if (!originalIds.has(Number(returnItemId))) {
-          throw new BadRequestException(
-            `Invalid returnItemId ${returnItemId} in incoming items. Not part of original return items for returnId ${returnId}`
-          );
-        }
-      }
-
-      // Step 5: Update return request status
-      // const returnRequest = await manager.findOneByOrFail(Return, { id: returnId });
-      returnRequest.returnStatus = ReturnStatus.WAITING_APPROVAL;
-      await manager.save(returnRequest);
-
-      // Step 6: Process return items
-      for (const original of originalReturnItems) {
-        const matchingIncoming = incomingItems.filter(i => i.returnItemId === original.id);
-        const totalIncomingQty = matchingIncoming.reduce((sum, i) => sum + i.quantity, 0);
-
-        if (matchingIncoming.length === 1 && matchingIncoming[0].quantity === original.quantity) {
-          // No split needed
-          original.status = ReturnItemStatus.WAITING_APPROVAL;
-          original.itemCondition = matchingIncoming[0].itemCondition;
-          await manager.save(original);
-        } else {
-          // Split needed
-          original.status = ReturnItemStatus.SPLIT;
-          await manager.save(original);
-
-          const newReturnItems: ReturnItem[] = [];
-
-
-          for (const incoming of matchingIncoming) {
-            const fullItem = originalReturnItems.find(item => item.orderItem.id === incoming.orderItemId);
-            console.log(fullItem);
-            
-            if (!fullItem) {
-              throw new BadRequestException(
-                `OrderItem ID ${incoming.orderItemId} not found in original return items`
-              );
+      for (const incomingItem of incomingItems) {
+        let exist = false;
+        itemQuantityMapping[incomingItem.returnItemId] =
+          (itemQuantityMapping[incomingItem.returnItemId] || 0) + incomingItem.quantity;
+        for (const originalItem of originReturnItems) {
+          if (incomingItem.returnItemId === originalItem.id) {
+            exist = true;
+            if (incomingItem.quantity !== originalItem.quantity) {
+              originalItem.status = ReturnItemStatus.SPLIT;
+              const calculatedData = await this.calculateItemAmount(originalItem.orderItem, incomingItem.quantity);
+              const newItem = manager.create(ReturnItem, {
+                returnRequest: returnRequest,
+                orderItem: originalItem.orderItem,
+                quantity: incomingItem.quantity,
+                itemCondition: incomingItem.itemCondition,
+                status: ReturnItemStatus.WAITING_APPROVAL,
+                subTotal: calculatedData.subTotal,
+                originalSubtotal: calculatedData.originalSubTotal,
+                itemCgstAmount: calculatedData.itemCgstAmount,
+                itemSgstAmount: calculatedData.itemSgstAmount,
+                itemIgstAmount: calculatedData.itemIgstAmount,
+                deliveryShare: calculatedData.deliveryShare,
+                deliveryCharge: calculatedData.deliveryCharge,
+                deliveryCgstAmount: calculatedData.deliveryCgstAmount,
+                deliverySgstAmount: calculatedData.deliverySgstAmount,
+                deliveryIgstAmount: calculatedData.deliveryIgstAmount,
+                totalItemTax: calculatedData.totalItemTax,
+                totalDeliveryTax: calculatedData.totalDeliveryTax,
+                totalTaxAmount: calculatedData.totalTaxAmount,
+                totalAmount: calculatedData.totalAmount,
+                discountAmount: calculatedData.discountAmount,
+              });
+              console.log(newItem);
+              
+              returnRequest.items.push(newItem);
             }
-            const calculatedData = await this.calculateItemAmount(fullItem, incoming.quantity);
-
-            const newItem = manager.create(ReturnItem, {
-              returnRequest: original.returnRequest,
-              orderItem: original.orderItem,
-              quantity: incoming.quantity,
-              itemCondition: incoming.itemCondition,
-              status: ReturnItemStatus.WAITING_APPROVAL,
-              subTotal: calculatedData.subTotal,
-              originalSubtotal: calculatedData.originalSubTotal,
-              itemCgstAmount: calculatedData.itemCgstAmount,
-              itemSgstAmount: calculatedData.itemSgstAmount,
-              itemIgstAmount: calculatedData.itemIgstAmount,
-              deliveryShare: calculatedData.deliveryShare,
-              deliveryCharge: calculatedData.deliveryCharge,
-              deliveryCgstAmount: calculatedData.deliveryCgstAmount,
-              deliverySgstAmount: calculatedData.deliverySgstAmount,
-              deliveryIgstAmount: calculatedData.deliveryIgstAmount,
-              totalItemTax: calculatedData.totalItemTax,
-              totalDeliveryTax: calculatedData.totalDeliveryTax,
-              totalTaxAmount: calculatedData.totalTaxAmount,
-              totalAmount: calculatedData.totalAmount,
-            });
-            newReturnItems.push(newItem);
+            else {
+              originalItem.status = ReturnItemStatus.WAITING_APPROVAL;
+              originalItem.itemCondition=incomingItem.itemCondition
+            }
 
           }
-
-          await manager.save(ReturnItem, newReturnItems);
-
+        }
+        if (!exist) {
+          throw new BadRequestException(`Return item id ${incomingItem.returnItemId} is not part of the original return`)
         }
       }
 
+      for (const originalItem of originReturnItems) {
+        if (originalItem.id) {
+          const totalIncomingQuantity = itemQuantityMapping[originalItem.id] || 0;
+          if (totalIncomingQuantity !== originalItem.quantity) {
+            throw new BadRequestException(
+              `Total quantity for return item id ${originalItem.id} is ${totalIncomingQuantity}, but expected ${originalItem.quantity}`
+            );
+          }
+        }
+      }
+
+
+
+      returnRequest.returnStatus = ReturnStatus.WAITING_APPROVAL;
+
+      await manager.save(returnRequest);
+
+      try {
+        await manager.save(ReturnItem, originReturnItems);
+      } catch (error) {
+        console.error('Error saving return items:', error);
+        throw new InternalServerErrorException('Failed to save return items');
+      }
       const returnItems = await manager.find(ReturnItem, {
         where: {
           returnRequest: { id: returnId },
@@ -473,21 +471,23 @@ export class ReturnsService {
         relations: ['orderItem', 'orderItem.stock', 'orderItem.order'],
       });
 
+
+
       const movements = returnItems.map((item) => ({
         stockId: item.orderItem.stock.id,
         orderItemId: item.orderItem.id,
         orderId: item.orderItem.order.id,
         quantity: item.quantity,
         from: StockStage.RETURNED,
-        to:
-          item.itemCondition === ReturnItemCondition.GOOD
+        to:item.itemCondition === ReturnItemCondition.GOOD
             ? StockStage.AVAILABLE
             : StockStage.DAMAGED,
       }));
 
       await this.stockMovementsService.createMovements(movements, manager);
+      return { message: 'Return items verified and sent for approval', returnId };
 
-      return { message: 'Return items verified and moved to approval', returnId };
+
     });
   }
 
@@ -516,7 +516,6 @@ export class ReturnsService {
 
       const processedAt = new Date();
 
-      const updatedItems: ReturnItem[] = [];
       const walletRefundItems: ReturnItem[] = [];
       const replacementItems: ReturnItem[] = [];
       const sourceRefundItems: ReturnItem[] = [];
@@ -526,38 +525,25 @@ export class ReturnsService {
         if (!match) {
           throw new BadRequestException(`Item mismatch for returnItemId: ${incoming.returnItemId}`);
         }
+
         match.resolutionMethod = incoming.action;
-        if (
-          incoming.action === 'WALLET_REFUND' ||
-          incoming.action === 'SOURCE_REFUND'
-        ) {
-          const amountData = await this.calculateItemAmount(match, 1);
-
-          match.subTotal = amountData.subTotal;
-          match.itemCgstAmount = amountData.itemCgstAmount;
-          match.itemSgstAmount = amountData.itemSgstAmount;
-          match.itemIgstAmount = amountData.itemIgstAmount;
-          match.totalAmount = amountData.totalAmount;
-          match.resolutionDate = processedAt;
-          match.status = ReturnItemStatus.COMPLETED;
-        }
-
+        match.status = ReturnItemStatus.COMPLETED;
+        match.resolutionDate = processedAt;
+        match.resolutionDate = processedAt;
         if (match.resolutionMethod === ReturnResolutionMethod.WALLET_REFUND) {
           walletRefundItems.push(match);
         } else if (match.resolutionMethod === ReturnResolutionMethod.REPLACEMENT) {
           replacementItems.push(match);
-        } else if (match.resolutionMethod === ReturnResolutionMethod.SOURCE_REFUND) {
-          sourceRefundItems.push(match);
         }
 
       }
-
-
       returnRequest.returnStatus = ReturnStatus.PROCESSED;
       returnRequest.processedDate = processedAt;
 
-      await manager.getRepository(ReturnItem).save(updatedItems);
+
+      await manager.getRepository(ReturnItem).save(returnItems);
       await manager.getRepository(Return).save(returnRequest);
+
 
 
       if (walletRefundItems.length === 0 && replacementItems.length === 0 && sourceRefundItems.length === 0) {
@@ -572,8 +558,10 @@ export class ReturnsService {
 
         // Sum up totalAmount from walletRefundItems
         const totalRefundAmount = walletRefundItems.reduce((sum, item) => {
-          return sum + Number(item.totalAmount); // ensure it's a number
+          return Number((sum + Number(item.totalAmount)).toFixed(2)); // ensure it's a number
         }, 0);
+
+
 
         // Call the wallet service method
         await this.walletService.refundToWallet(walletId, totalRefundAmount, manager);
@@ -583,9 +571,12 @@ export class ReturnsService {
 
       if (replacementItems.length > 0) {
 
-
-        await this.createReplacementOrder(replacementItems, returnRequest.order.id, manager);
-
+        try {
+          await this.createReplacementOrder(replacementItems, returnRequest.order.id, manager);
+        } catch (error) {
+          console.error('Error creating replacement order:', error);
+          throw new InternalServerErrorException('Failed to create replacement order');
+        }
       }
 
       return { message: 'Return processed successfully' };
@@ -647,7 +638,9 @@ export class ReturnsService {
       totalAmount: round(totalAmount),
       deliveryShare: round(newDeliveryShare),
       deliveryCharge: round(newDeliveryCharge),
-      totalTaxAmount: round(totalTaxAmount)
+      totalTaxAmount: round(totalTaxAmount),
+      discountAmount: round(discountAmount),
+
     };
   }
 
@@ -683,6 +676,11 @@ export class ReturnsService {
       subTotal: 0,
       totalTax: 0,
       totalDiscount: 0,
+      deliveryCharge: 0,
+      originalSubtotal: 0,
+      totalDeliveryTax: 0,
+      totalItemTax: 0,
+      walletAmountUsed: 0,
       billingName: originalOrder.billingName,
       billingPhoneNumber: originalOrder.billingPhoneNumber,
       billingEmailId: originalOrder.billingEmailId,
@@ -713,6 +711,7 @@ export class ReturnsService {
         throw new BadRequestException(`Insufficient stock for stock ID ${item.stockId}`);
       }
 
+
       const orderItem = manager.create(OrderItem, {
         order: replacementOrder,
         productVariant: item.orderItem.productVariant,
@@ -722,10 +721,18 @@ export class ReturnsService {
         mrp: 0,
         subTotal: 0,
         taxAmount: 0,
-        cgstAmount: 0,
-        sgstAmount: 0,
-        igstAmount: 0,
+        itemCgstAmount: 0,
+        itemSgstAmount: 0,
+        itemIgstAmount: 0,
+        deliverySgstAmount: 0,
+        deliveryCgstAmount: 0,
+        deliveryIgstAmount: 0,
+        itemTaxAmount: 0,
+        totalTaxAmount: 0,
+        deliveryTaxAmount: 0,
         totalAmount: 0,
+        deliveryShare: 0,
+        deliveryCharge: 0,
         gstType: item.orderItem.gstType,
         cgst: 0,
         sgst: 0,
@@ -736,9 +743,16 @@ export class ReturnsService {
     }
 
 
-    await manager.save(OrderItem, orderItems);
+    const savedOrderItems = await manager.save(OrderItem, orderItems);
 
-    const movements = orderItems.map(orderItem => ({
+    const orderItemIds = savedOrderItems.map(item => item.id);
+
+    const reloadedOrderItems = await manager.find(OrderItem, {
+      where: { id: In(orderItemIds) },
+      relations: ['stock', 'order'], // add other needed relations
+    });
+
+    const movements = reloadedOrderItems.map(orderItem => ({
       stockId: orderItem.stock.id,
       orderItemId: orderItem.id,
       orderId: replacementOrder.id,
@@ -746,8 +760,8 @@ export class ReturnsService {
       from: StockStage.AVAILABLE,
       to: StockStage.RESERVED,
     }));
-    await this.stockMovementsService.createMovements(movements, manager);
 
+    await this.stockMovementsService.createMovements(movements, manager);
   }
 
   async getReturnsWithWalletRefundItemsInRange(filters: any): Promise<Return[]> {

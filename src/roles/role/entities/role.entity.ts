@@ -14,13 +14,13 @@ export class Role {
   permissionGroup: string; 
 
   @OneToMany(() => RolePermission, (rolePermission) => rolePermission.role, {
-    cascade: true,
+    cascade: false,
     eager: true, // 🔥 This must be set
   })  
   permissions: RolePermission[]; // Relation with RolePermission table
 
   @OneToMany(() => User, (user) => user.role,{
-    cascade:true
+    cascade:false
   })
   users: User[];
 

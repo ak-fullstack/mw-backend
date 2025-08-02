@@ -35,7 +35,7 @@ export class Return {
     })
     returnType: ReturnType;
 
-    @OneToMany(() => ReturnItem, item => item.returnRequest, { cascade: true })
+    @OneToMany(() => ReturnItem, item => item.returnRequest, { cascade: false })
     items: ReturnItem[];
 
     @Column({
@@ -59,7 +59,7 @@ export class Return {
 
 
     @OneToMany(() => ReturnImage, (image) => image.return, {
-        cascade: true,
+        cascade: false,
     })
     images: ReturnImage[];
 }

@@ -18,7 +18,7 @@ export class ReturnItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Return, ret => ret.items, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Return, ret => ret.items, { onDelete: 'CASCADE',nullable:false })
   @JoinColumn({ name: 'returnId' })
   returnRequest: Return;
 
@@ -47,10 +47,10 @@ export class ReturnItem {
   @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer:DecimalToNumber })
   subTotal: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true ,transformer:DecimalToNumber})
+  @Column('decimal', { precision: 10, scale: 2, nullable: false ,transformer:DecimalToNumber})
   originalSubtotal: number; // quantity * sp
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true ,transformer:DecimalToNumber})
+  @Column('decimal', { precision: 10, scale: 2, nullable: false ,transformer:DecimalToNumber})
   discountAmount: number; // quantity * sp
 
 

@@ -63,10 +63,10 @@ export class OrderItem {
   @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer:DecimalToNumber })
   subTotal: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true,transformer:DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer:DecimalToNumber })
   originalSubtotal: number; // quantity * sp
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true,transformer:DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer:DecimalToNumber })
   discountAmount: number; // quantity * sp
 
   @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer:DecimalToNumber })
