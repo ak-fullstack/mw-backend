@@ -5,9 +5,6 @@ export class EodClosure {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'date', unique: true })
-    date: string;
-
     @Column({ type: 'int', default: 0 })
     orderCount: number;
 
@@ -46,6 +43,9 @@ export class EodClosure {
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     closureTime: Date;
+
+    @Column({ type: 'date', unique: true })
+    closureDate: Date;
 
     @Column({
         type: 'timestamp',

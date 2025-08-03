@@ -768,15 +768,15 @@ export class ReturnsService {
     const where: any = {};
 
     if (filters.startDate && filters.endDate) {
-      const start = new Date(`${filters.startDate}T00:00:00.000Z`)
-      const end = new Date(`${filters.endDate}T23:59:59.999Z`);
+      const start = new Date(filters.startDate)
+      const end = new Date(filters.endDate);
       where.processedDate = Between(start, end);
     } else if (filters.startDate) {
-      const start = new Date(`${filters.startDate}T00:00:00.000Z`)
+      const start = new Date(filters.startDate)
       where.processedDate = MoreThanOrEqual(start);
     }
     else if (filters.endDate) {
-      const end = new Date(`${filters.endDate}T23:59:59.999Z`);
+      const end = new Date(filters.endDate);
       where.createdAt = LessThanOrEqual(end);
 
     }

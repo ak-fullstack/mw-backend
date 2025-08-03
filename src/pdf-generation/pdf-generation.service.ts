@@ -7,11 +7,15 @@ import { OrdersService } from 'src/order/orders/orders.service';
 import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { EodClosure } from 'src/eod-closure/entities/eod-closure.entity';
 import { EodClosureService } from 'src/eod-closure/eod-closure.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PdfGenerationService {
 
-  constructor(private readonly orderService: OrdersService,private readonly eodClosureService:EodClosureService) {
+  constructor(private readonly orderService: OrdersService, private readonly eodClosureService: EodClosureService,
+    @InjectRepository(EodClosure) private readonly eodClosureRepo: Repository<EodClosure>
+  ) {
 
   }
   async generatePdf(data: { name: string; link: string }): Promise<Buffer> {
@@ -40,7 +44,7 @@ export class PdfGenerationService {
   async generateOrderReportPDF(payload: any): Promise<Buffer> {
 
     const { startDate, endDate, selectedOrderItemKeys, selectedOrderKeys, selectedReturnKeys, selectedReturnItemKeys } = payload;
-    const {orders,returns,...rest} = await this.orderService.orderReport({ paymentStatus: PaymentStatus.PAID, startDate, endDate })
+    const { orders, returns, ...rest } = await this.orderService.orderReport({ paymentStatus: PaymentStatus.PAID, startDate, endDate })
     const templatePath = path.join(process.cwd(), 'src', 'pdf-generation', 'templates', 'order-report.hbs');
     const html = fs.readFileSync(templatePath, 'utf8');
     const template = Handlebars.compile(html);
@@ -99,7 +103,7 @@ export class PdfGenerationService {
     };
 
     console.log(data);
-    
+
 
     function transformKey(key: string): string {
       return key
@@ -128,14 +132,24 @@ export class PdfGenerationService {
 
 
 
-  async generateEodReportPdf(){
+  async generateEodReportPdf(date: string) {
 
-
+    const reportDate = new Date(date);
     const templatePath = path.join(process.cwd(), 'src', 'pdf-generation', 'templates', 'eod-report.hbs');
     const html = fs.readFileSync(templatePath, 'utf8');
     const template = Handlebars.compile(html);
+
+    const closure = await this.eodClosureRepo.findOne({
+      where: {
+        closureDate: reportDate,
+      }
+    });
     
-    const data=await this.eodClosureService.generateEodReport();
+    if(!closure){
+      throw new BadRequestException('Cannot download report for the date without closure');
+    }
+    
+    const data = await this.eodClosureService.generateEodReport(date);
     const compiledHtml = template(data);
 
     const browser = await puppeteer.launch({ headless: true });

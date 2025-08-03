@@ -21,7 +21,7 @@ export class GoogleCloudStorageController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: 5 * 1024 * 1024, // Max file size: 5 MB
+        fileSize: 5 * 1024 * 1024,
       },
     }),
   )

@@ -415,21 +415,25 @@ export class OrdersService {
           where.paymentStatus = In(paymentStatuses);
         }
       }
-
+    
+      
       if (filters.startDate && filters.endDate) {
-        const start = new Date(`${filters.startDate}T00:00:00.000Z`)
-        const end = new Date(`${filters.endDate}T23:59:59.999Z`);
-
+        const start = new Date(filters.startDate)
+        const end = new Date(filters.endDate);
+        console.log(start);
+        console.log(end);
+        
         where.createdAt = Between(start, end);
       } else if (filters.startDate) {
-        const start = new Date(`${filters.startDate}T00:00:00.000Z`)
+        const start = new Date(filters.startDate)
 
         where.createdAt = MoreThanOrEqual(start);
       } else if (filters.endDate) {
-        const end = new Date(`${filters.endDate}T23:59:59.999Z`);
+        const end = new Date(filters.endDate);
         where.createdAt = LessThanOrEqual(end);
       }
-
+      
+      
 
       const [orders, total]: [Order[], number] = await this.orderRepository.findAndCount({
         where,

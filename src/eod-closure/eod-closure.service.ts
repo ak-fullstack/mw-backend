@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateEodClosureDto } from './dto/create-eod-closure.dto';
 import { UpdateEodClosureDto } from './dto/update-eod-closure.dto';
 import { Between, EntityManager, Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { PaymentStatus } from 'src/enum/payment-status.enum';
 import { start } from 'repl';
 import { Return } from 'src/order/returns/entities/return.entity';
 import { ReturnResolutionMethod } from 'src/enum/resolution-method.enum';
+import { EodReportDto } from './dto/eod-report.dto';
 
 
 @Injectable()
@@ -24,44 +25,65 @@ export class EodClosureService {
   ) { }
 
 
-  async generateEodReport() {
-    const lastClosures = await this.eodClosureRepo.find({
-      order: { closureTime: 'DESC' },
-      take: 2,
+  async generateEodReport(date: string) {
+
+    const yesterdayStart = new Date(date);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 2);
+    yesterdayStart.setUTCHours(18, 30, 0, 0);
+
+    const yesterdayEnd = new Date(date);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+    yesterdayEnd.setUTCHours(18, 29, 59, 999);
+
+    const todayStart = new Date(date);
+    todayStart.setDate(todayStart.getDate() - 1);
+    todayStart.setUTCHours(18, 30, 0, 0);
+
+    const todayEnd = new Date(date);
+    todayEnd.setUTCHours(18, 29, 59, 999);
+
+
+    let start: Date;
+    let end: Date;
+
+    const todaysClosure = await this.eodClosureRepo.findOne({
+      where: {
+        closureTime: Between(todayStart, todayEnd),
+      }
     });
 
-    if (lastClosures.length === 0) {
-      throw new Error('No EOD entries found.');
+    
+    const yesterdaysClosure = await this.eodClosureRepo.findOne({
+      where: {
+        closureTime: Between(yesterdayStart, yesterdayEnd),
+      },
+      order: { closureTime: 'DESC' },
+    });
+    
+    
+
+    if (!yesterdaysClosure) {
+      start = todayStart;
+    }
+    else {
+      start = yesterdaysClosure.closureTime;
+     
+      
     }
 
-    const classification = this.isTodayOrYesterdayInIST(lastClosures[0].closureTime.toISOString());
 
+    if (todaysClosure) {
+      end = todaysClosure.closureTime;
+    } else {
+      end = todayEnd;
+    }
 
-    let startTime: any;
-    let endTime: any;
-
-    //     if (classification === 'today') {
-    //   if (lastClosures.length < 2) {
-    //     throw new Error('Cannot find previous EOD for today\'s report.');
-    //   }
-    //   startTime = new Date(lastClosures[1].closureTime); // second last
-    //   endTime = new Date(lastClosures[0].closureTime);   // last
-    // } else if (classification === 'yesterday') {
-    //   startTime = new Date(lastClosures[0].closureTime);
-    //   endTime = new Date(); // now in UTC
-    // } else {
-    //   throw new Error('Last EOD entry is neither today nor yesterday in IST.');
-    // }
-
-
-    startTime = '2025-07-01 18:08:00';
-    endTime = '2025-07-28 23:50:00';
-
-
+    console.log(start, end);
+    
 
     const paidOrders = await this.orderRepo.find({
       where: {
-        createdAt: Between(startTime, endTime),
+        createdAt: Between(start, end),
         paymentStatus: PaymentStatus.PAID,
       },
       relations: ['items.productVariant.product'], // Include other relations if needed
@@ -91,8 +113,8 @@ export class EodClosureService {
     }
 
     const topProductName = paidOrders
-  .flatMap(order => order.items)
-  .find(item => item.productVariant.product.id === topProductId)?.productVariant.product.name || null;
+      .flatMap(order => order.items)
+      .find(item => item.productVariant.product.id === topProductId)?.productVariant.product.name || null;
 
     let orderCount = 0;
     let totalOrderValue = 0;
@@ -123,7 +145,7 @@ export class EodClosureService {
 
     const returns = await this.returnRepo.find({
       where: {
-        createdAt: Between(startTime, endTime),
+        createdAt: Between(start, end),
       },
       relations: ['items'],
     });
@@ -160,42 +182,42 @@ export class EodClosureService {
 
 
     return {
-  order: {
-    orderCount,
-    totalOrderValue: Number(totalOrderValue.toFixed(2)),
-    totalDiscount: Number(totalDiscount.toFixed(2)),
-    totalDelvieryCharge: Number(totalDelvieryCharge.toFixed(2)),
-    totalAmountCollected: Number(totalAmountCollected.toFixed(2)),
-    totalCgst: Number(totalCgst.toFixed(2)),
-    totalSgst: Number(totalSgst.toFixed(2)),
-    totalIgst: Number(totalIgst.toFixed(2)),
-    totalTax: Number(totalTax.toFixed(2)),
-  },
-  refund: {
-    refundCount,
-    refundValue: Number(refundValue.toFixed(2)),
-    refundAmountCollcted: Number(refundAmountCollcted.toFixed(2)),
-    refundCgst: Number(refundCgst.toFixed(2)),
-    refundSgst: Number(refundSgst.toFixed(2)),
-    refundIgst: Number(refundIgst.toFixed(2)),
-    refundTax: Number(refundTax.toFixed(2)),
-    refundDeliveryCharge: Number(refundDeliveryCharge.toFixed(2)),
-  },
-  netCollection: {
-    netValue: Number((totalOrderValue - refundValue).toFixed(2)),
-    netAmountCollected: Number((totalAmountCollected - refundAmountCollcted).toFixed(2)),
-    netDeliveryCharge: Number((totalDelvieryCharge - refundDeliveryCharge).toFixed(2)),
-    netCgst: Number((totalCgst - refundCgst).toFixed(2)),
-    netSgst: Number((totalSgst - refundSgst).toFixed(2)),
-    netIgst: Number((totalIgst - refundIgst).toFixed(2)),
-    netTax: Number((totalTax - refundTax).toFixed(2)),
-  },
-  topProduct: {
-    productId: topProductId,
-    quantitySold: maxSold,
-    name: topProductName,
-  },
-      
+      order: {
+        orderCount,
+        totalOrderValue: Number(totalOrderValue.toFixed(2)),
+        totalDiscount: Number(totalDiscount.toFixed(2)),
+        totalDelvieryCharge: Number(totalDelvieryCharge.toFixed(2)),
+        totalAmountCollected: Number(totalAmountCollected.toFixed(2)),
+        totalCgst: Number(totalCgst.toFixed(2)),
+        totalSgst: Number(totalSgst.toFixed(2)),
+        totalIgst: Number(totalIgst.toFixed(2)),
+        totalTax: Number(totalTax.toFixed(2)),
+      },
+      refund: {
+        refundCount,
+        refundValue: Number(refundValue.toFixed(2)),
+        refundAmountCollcted: Number(refundAmountCollcted.toFixed(2)),
+        refundCgst: Number(refundCgst.toFixed(2)),
+        refundSgst: Number(refundSgst.toFixed(2)),
+        refundIgst: Number(refundIgst.toFixed(2)),
+        refundTax: Number(refundTax.toFixed(2)),
+        refundDeliveryCharge: Number(refundDeliveryCharge.toFixed(2)),
+      },
+      netCollection: {
+        netValue: Number((totalOrderValue - refundValue).toFixed(2)),
+        netAmountCollected: Number((totalAmountCollected - refundAmountCollcted).toFixed(2)),
+        netDeliveryCharge: Number((totalDelvieryCharge - refundDeliveryCharge).toFixed(2)),
+        netCgst: Number((totalCgst - refundCgst).toFixed(2)),
+        netSgst: Number((totalSgst - refundSgst).toFixed(2)),
+        netIgst: Number((totalIgst - refundIgst).toFixed(2)),
+        netTax: Number((totalTax - refundTax).toFixed(2)),
+      },
+      topProduct: {
+        productId: topProductId,
+        quantitySold: maxSold,
+        name: topProductName,
+      },
+
     }
 
   }
@@ -230,6 +252,57 @@ export class EodClosureService {
     } else {
       return 'other';
     }
+  }
+
+
+  async createClosure() {
+    const now = new Date();
+    // const options: Intl.DateTimeFormatOptions = {
+    //   timeZone: 'Asia/Kolkata',
+    //   year: 'numeric',
+    //   month: '2-digit',
+    //   day: '2-digit',
+    //   hour: '2-digit',
+    //   minute: '2-digit',
+    //   second: '2-digit',
+    //   hour12: false,
+    // };
+
+    // const istDateTime = now.toLocaleString('en-CA', options);
+    const istDate = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    
+    const start = new Date(istDate);
+    start.setDate(start.getDate() - 1);
+    start.setUTCHours(18, 30, 0, 0);
+
+    const end = new Date(istDate);
+    end.setDate(end.getDate());
+    end.setUTCHours(18, 29, 59, 999);
+    
+       const todaysClosure = await this.eodClosureRepo.findOne({
+      where: {
+        closureTime: Between(start, end),
+      }
+    });
+
+    if(todaysClosure){
+      throw new BadRequestException('EOD closure already exists for today');
+    }
+
+    const closure = this.eodClosureRepo.create({
+      closureDate: istDate,
+
+    });
+
+try {
+await this.eodClosureRepo.save(closure);
+return {message:'EOD closure created successfully', closureId: closure.id};
+} catch (error) {
+  console.error('Failed to save EOD closure:', error);
+
+  // Optional: Throw a custom HTTP exception (if using NestJS)
+  throw new InternalServerErrorException('Failed to save EOD closure');
+}    
   }
 
 }

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, StreamableFile } from '@nestjs/common';
 import { PdfGenerationService } from './pdf-generation.service';
 import { Response } from 'express';
 import { OrderReportDto } from './dto/order-report.dto';
+import { EodReportDto } from 'src/eod-closure/dto/eod-report.dto';
 
 @Controller('pdf-generation')
 export class PdfGenerationController {
@@ -37,17 +38,13 @@ export class PdfGenerationController {
     res.send(buffer);
   }
 
-  @Post('eod-report')
-  async generateEodReport(
-    @Res() res: Response,
-  ) {
-    const buffer = await this.pdfGenerationService.generateEodReportPdf();
-    res.set({
-      'Content-Type': 'application/pdf',
-      // 'Content-Disposition': 'inline; filename=document.pdf',
-      'Content-Disposition': 'attachment; filename="report.pdf"',
-      'Content-Length': buffer.length,
-    });
-    res.send(buffer);
-  }
+@Post('eod-report')
+async generateEodReport(@Body() body: EodReportDto): Promise<StreamableFile> {
+  const buffer = await this.pdfGenerationService.generateEodReportPdf(body.date);
+
+  return new StreamableFile(buffer, {
+    type: 'application/pdf',
+    disposition: 'attachment; filename="report.pdf"',
+  });
+}
 }

@@ -24,7 +24,6 @@ constructor(private readonly configService: ConfigService) {
   // Log once connection is ready
   this.redisClient.on('ready', () => {
     console.log('✅ Redis connection established and ready to use');
-    console.log(new Date());
     
   });
 
