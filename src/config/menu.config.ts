@@ -92,6 +92,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
             { label: 'All Orders', link: '/orders', permissions: [PermissionEnum.READ_ORDER] },
             { label: 'Order Reception', link: '/order-reception', permissions: [PermissionEnum.READ_ORDER] },
             { label: 'QC Check', link: '/qc', permissions: [PermissionEnum.READ_ORDER] },
+            { label: 'Assign Awb', link: '/awb', permissions: [PermissionEnum.READ_ORDER] },
             { label: 'Packed Orders', link: '/packed-orders', permissions: [PermissionEnum.READ_ORDER] },
             { label: 'Shipped Orders', link: '/shipped-orders', permissions: [PermissionEnum.READ_ORDER] },
         ]

@@ -9,6 +9,7 @@ import { StockMovement } from 'src/inventory/stock-movements/entities/stock-move
 import { Return } from 'src/order/returns/entities/return.entity';
 import { WalletTransaction } from 'src/customer/wallet-transaction/entities/wallet-transaction.entity';
 import { DecimalToNumber } from 'src/common/transformers/decimal-transformer';
+import { ShiprocketShipment } from 'src/shiprocket/shiprocket-shipments/entities/shiprocket-shipment.entity';
 
 
 @Entity('orders')
@@ -47,35 +48,38 @@ export class Order {
   @OneToMany(() => OrderItem, item => item.order, { cascade: false })
   items: OrderItem[];
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   totalDiscount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   totalAmount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true, transformer: DecimalToNumber })
   paidAmount: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   subTotal: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   deliveryCharge: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   totalTax: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   originalSubtotal: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   totalDeliveryTax: number;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
+  @Column('decimal', { precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
   totalItemTax: number;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  billingName: string;
+  billingFirstName: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  billingLastName: string;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
   billingPhoneNumber: string;
@@ -100,7 +104,10 @@ export class Order {
   billingCountry: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  shippingName: string;
+  shippingFirstName: string;
+
+   @Column({ type: 'varchar', length: 50, nullable: true })
+  shippingLastName: string;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
   shippingPhoneNumber: string;
@@ -138,7 +145,7 @@ export class Order {
   @Column({ type: 'timestamp', nullable: true })
   paidAt: Date;
 
-    @Column({
+  @Column({
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
@@ -150,6 +157,9 @@ export class Order {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @OneToMany(() => ShiprocketShipment, shipment => shipment.order)
+  shipments: ShiprocketShipment[];
 
   @OneToMany(() => Payment, payment => payment.order, { cascade: false })
   payments: Payment[];
@@ -180,23 +190,23 @@ export class Order {
   deliveredAt: Date;
 
   @Column({
-  type: 'enum',
-  enum: ['wallet', 'razorpay', 'wallet+razorpay', 'none'],
-  default: 'razorpay',
-})
-paymentSource: 'wallet' | 'razorpay' | 'wallet+razorpay' | 'none';
+    type: 'enum',
+    enum: ['wallet', 'razorpay', 'wallet+razorpay', 'none'],
+    default: 'razorpay',
+  })
+  paymentSource: 'wallet' | 'razorpay' | 'wallet+razorpay' | 'none';
 
-@Column({ type: 'boolean', default: false })
-usedWallet: boolean;
+  @Column({ type: 'boolean', default: false })
+  usedWallet: boolean;
 
-@Column({ type: 'decimal', precision: 10, scale: 2, nullable: false,transformer: DecimalToNumber })
-walletAmountUsed: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false, transformer: DecimalToNumber })
+  walletAmountUsed: number;
 
-@Column({ type: 'decimal', precision: 10, scale: 2, nullable: true,transformer: DecimalToNumber })
-razorpayAmountPaid: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: DecimalToNumber })
+  razorpayAmountPaid: number;
 
-@Column({ type: 'boolean', default: false })
-isZeroPayment: boolean; // For replacement orders or free offers
+  @Column({ type: 'boolean', default: false })
+  isZeroPayment: boolean; // For replacement orders or free offers
 
   @OneToMany(() => WalletTransaction, tx => tx.order)
   walletTransactions: WalletTransaction[];
@@ -204,7 +214,7 @@ isZeroPayment: boolean; // For replacement orders or free offers
 
   get fullBillingAddress(): string {
     const parts = [
-      this.billingName,
+      this.billingFirstName+ ' ' + this.billingLastName,
       this.billingStreetAddress,
       this.billingCity,
       this.billingState,
@@ -216,7 +226,7 @@ isZeroPayment: boolean; // For replacement orders or free offers
 
   get fullShippingAddress(): string {
     const parts = [
-      this.shippingName,
+      this.shippingFirstName + ' ' + this.shippingLastName,
       this.shippingStreetAddress,
       this.shippingCity,
       this.shippingState,

@@ -20,13 +20,15 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { RedisModule } from './redis/redis.module';
 import { EodClosureModule } from './eod-closure/eod-closure.module';
 import { OrderSettingsModule } from './settings/order-settings/order-settings.module';
+import { ShiprocketShipmentsModule } from './shiprocket/shiprocket-shipments/shiprocket-shipments.module';
+import { ShiprocketStatusLogModule } from './shiprocket/shiprocket-status-log/shiprocket-status-log.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule, OrderSettingsModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule, OrderSettingsModule, ShiprocketShipmentsModule, ShiprocketStatusLogModule],
   controllers: [AppController],
   providers: [AppService],
 })

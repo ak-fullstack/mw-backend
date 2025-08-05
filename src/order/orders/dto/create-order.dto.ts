@@ -13,7 +13,11 @@ export class OrderItemDto {
 export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
-  shippingName: string;
+  shippingFirstName: string;
+
+   @IsString()
+  @IsNotEmpty()
+  shippingLastName: string;
 
   @IsString()
   @Matches(/^[0-9]{10}$/, { message: 'Phone number must be 10 digits' })

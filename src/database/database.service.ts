@@ -8,11 +8,11 @@ export class DatabaseService {
 
   constructor(private readonly configService: ConfigService) { }
 
-    streamBackupGz(): NodeJS.ReadableStream {
+  streamBackupGz(): NodeJS.ReadableStream {
     const host = this.configService.get<string>('DB_HOST') || 'localhost';
-const user = this.configService.get<string>('DB_USER') || 'root';
-const password = this.configService.get<string>('DB_PASSWORD') || '';
-const database = this.configService.get<string>('DB_NAME') || '';
+    const user = this.configService.get<string>('DB_USER') || 'root';
+    const password = this.configService.get<string>('DB_PASSWORD') || '';
+    const database = this.configService.get<string>('DB_NAME') || '';
 
     // Spawn mysqldump
     const dumpProcess = spawn('mysqldump', [

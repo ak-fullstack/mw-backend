@@ -15,11 +15,12 @@ import { Return } from '../returns/entities/return.entity';
 import { ReturnsModule } from '../returns/returns.module';
 import { WalletModule } from 'src/customer/wallet/wallet.module';
 import { OrderSettingsModule } from 'src/settings/order-settings/order-settings.module';
+import { ShiprocketShipmentsModule } from 'src/shiprocket/shiprocket-shipments/shiprocket-shipments.module';
 
 @Module({
   controllers: [OrdersController],
   providers: [OrdersService],
-imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress,Return]),RazorpayModule,QrCodeModule,StockMovementsModule,ReturnsModule,WalletModule,OrderSettingsModule],
+imports: [TypeOrmModule.forFeature([Order,Stock,Customer,CustomerAddress,Return]),RazorpayModule,QrCodeModule,StockMovementsModule,ReturnsModule,WalletModule,OrderSettingsModule,ShiprocketShipmentsModule],
 exports:[OrdersService]
 })
 export class OrdersModule {}

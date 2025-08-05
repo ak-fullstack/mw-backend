@@ -3,6 +3,7 @@ export enum StockStage {
   AVAILABLE = 'available',
   RESERVED = 'reserved',
   QC_CHECK = 'qc_check',
+    WAITING_AWB = 'waiting_awb',
   WAITING_PICKUP = 'waiting_pickup',
   SHIPPED = 'shipped',
   IN_TRANSIT_TO_CUSTOMER = 'in_transit_to_customer',
