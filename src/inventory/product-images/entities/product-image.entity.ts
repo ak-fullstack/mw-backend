@@ -12,6 +12,10 @@ export class ProductImage {
   @ManyToOne(() => ProductVariant, variant => variant.images, { onDelete: 'CASCADE' })
   variant: ProductVariant;
 
+  @Column({ default: false })
+  isPrimary: boolean;
+
+
   @Column({
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',

@@ -3,8 +3,10 @@ import { ProductImage } from "src/inventory/product-images/entities/product-imag
 import { Product } from "src/inventory/products/entities/product.entity";
 import { Size } from "src/inventory/sizes/entities/size.entity";
 import { Stock } from "src/inventory/stocks/entities/stock.entity";
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { Check, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
 
+
+@Check(`sku NOT LIKE '% %'`)
 @Entity('product_variants')
 @Unique(['product', 'color', 'size'])
 export class ProductVariant {

@@ -2,7 +2,6 @@ import { Controller, Get, Res, UseGuards } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
-import { permission } from 'process';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 

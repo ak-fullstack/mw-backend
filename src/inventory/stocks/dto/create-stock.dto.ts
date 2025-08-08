@@ -25,6 +25,9 @@ export class VariantDto {
   quantity: number;
 
   @IsNumber()
+  damaged: number;
+
+  @IsNumber()
   ctc: number;
 
   @IsNumber()

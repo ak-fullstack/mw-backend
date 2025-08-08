@@ -72,9 +72,6 @@ async createMovements(
   HAVING SUM(combined.net_quantity) > 0;
 `);
 
-
-      console.log(result);
-
       const grouped: Record<number, { stockId: number; stockQuantity: number; stages: Record<string, number> }> = {};
       const stockIds = new Set<number>();
 

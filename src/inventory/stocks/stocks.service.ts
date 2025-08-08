@@ -18,8 +18,6 @@ export class StocksService {
     private readonly dataSource: DataSource,
     @InjectRepository(Stock)
     private readonly stockRepository: Repository<Stock>,
-    @InjectRepository(ProductVariant)
-    private readonly productVariantRepository: Repository<ProductVariant>
   ) { }
 
   async create(createStockdto: CreateStockDto) {
@@ -57,23 +55,55 @@ export class StocksService {
         stock.subTotal = v.subTotal;
         stock.totalTax = v.totalTax;
         stock.totalAmount = v.totalAmount;
+        stock.initialDamagedQuantity = v.damaged;
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + Number(v.expiryDays));
         stock.expiryDate = expiry;
         return stock;
       });
+      console.log('1');
+      let savedStocks: Stock[] = [];
 
-      const savedStocks = await manager.save(Stock, stockEntities);
+      try {
+        savedStocks = await manager.save(Stock, stockEntities);
+      } catch (error) {
+        console.error('❌ Error saving stocks:', error);
+        throw new Error('Failed to save stock entries');
+      } console.log('2');
+      const movements = savedStocks.flatMap((stock) => {
 
-      const movements = savedStocks.map((stock) => ({
-        stockId: stock.id,
-        quantity: stock.quantity,
-        from: StockStage.SUPPLIER,
-        to: StockStage.AVAILABLE,
-      }));
+
+        const movementList: any = [];
+        const goodQty = stock.quantity - stock.initialDamagedQuantity;
+
+        if (goodQty > 0) {
+          movementList.push({
+            stockId: stock.id,
+            quantity: goodQty,
+            from: StockStage.SUPPLIER,
+            to: StockStage.AVAILABLE,
+          });
+        }
+
+        if (stock.initialDamagedQuantity > 0) {
+          movementList.push({
+            stockId: stock.id,
+            quantity: stock.initialDamagedQuantity,
+            from: StockStage.SUPPLIER,
+            to: StockStage.DAMAGED,
+          });
+        }
+        return movementList;
+      })
+
+      // const movements = savedStocks.map((stock) => ({
+      //   stockId: stock.id,
+      //   quantity: stock.quantity,
+      //   from: StockStage.SUPPLIER,
+      //   to: StockStage.AVAILABLE,
+      // }));
 
       await this.stockMovementsService.createMovements(movements, manager);
-
       return { success: true, purchaseId: savedPurchase.id };
     });
   }
@@ -86,7 +116,7 @@ export class StocksService {
         relations: ['productVariant', 'productVariant.product', 'productVariant.color', 'productVariant.size', 'productVariant.images', 'purchase'],
         select: {
           id: true,
-          sp:true,
+          sp: true,
           productVariant: {
             id: true,
             sku: true,

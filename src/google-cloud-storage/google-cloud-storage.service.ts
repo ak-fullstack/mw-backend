@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
 
 
@@ -6,14 +6,14 @@ import { Storage } from '@google-cloud/storage';
 @Injectable()
 export class GoogleCloudStorageService {
 
-  constructor(){
+  constructor() {
   }
 
-  
+
   private storage = new Storage({ keyFilename: 'cloud-bucket-access.json' });
   private bucket = this.storage.bucket('mw-admin-dev-image-bucket');
 
-  async upload(file: Express.Multer.File,folderName:string): Promise<string> {
+  async upload(file: Express.Multer.File, folderName: string): Promise<string> {
     // Generate a unique file name based on the timestamp or use a UUID
     const timestamp = Date.now();
     const uniqueFileName = `${folderName}/${timestamp}_${file.originalname}`;
@@ -42,7 +42,17 @@ export class GoogleCloudStorageService {
     });
   }
 
-  async delete(fileName: string): Promise<void> {
+  async delete(fileUrl: string): Promise<void> {
+    const fileName = this.getFilePathFromGCSUrl(fileUrl, this.bucket.name);
     await this.bucket.file(fileName).delete();
+  }
+
+  getFilePathFromGCSUrl(fileUrl: string, bucketName: string): string {
+    const prefix = `https://storage.googleapis.com/${bucketName}/`;
+
+    if (!fileUrl.startsWith(prefix)) {
+      throw new Error('Invalid file URL');
+    }
+    return fileUrl.replace(prefix, '');
   }
 }

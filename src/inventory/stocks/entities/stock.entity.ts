@@ -19,8 +19,11 @@ export class Stock {
   @ManyToOne(() => ProductVariant, { onDelete: 'CASCADE' })
   productVariant: ProductVariant;
 
-  @Column()
+  @Column({nullable:false})
   quantity: number;
+
+   @Column({nullable:false})
+  initialDamagedQuantity: number;
 
   @Column('decimal', { precision: 10, scale: 2, transformer: DecimalToNumber })
   sp: number;

@@ -15,7 +15,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>
   ) {
-    this.setPassword('hello123')
+    this.setPassword('password') 
   }
 
   async setPassword(plainPassword: string): Promise<void> {

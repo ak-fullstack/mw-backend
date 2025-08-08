@@ -24,11 +24,12 @@ import { WalletTransaction, WalletTransactionReason } from 'src/customer/wallet-
 import { OrderSettingsService } from 'src/settings/order-settings/order-settings.service';
 import { ShiprocketShipmentsService } from 'src/shiprocket/shiprocket-shipments/shiprocket-shipments.service';
 import { ConfigService } from '@nestjs/config';
+import { GenerateAwbDto } from './dto/generate-awb.dto';
 
 @Injectable()
 export class OrdersService {
 
-  
+
   constructor(
     private readonly configService: ConfigService,
     private readonly razorpayService: RazorpayService,
@@ -99,6 +100,7 @@ export class OrdersService {
       }
       const pickupPincode = this.configService.get<string>('SHIPROCKET_PICKUP_PINCODE');
       const serviceability = await this.shiprocketShipmentService.checkServiceability({ pickup_postcode: pickupPincode, delivery_postcode: shippingAddress.pincode, cod: false, weight: 2, qc_check: 0 });
+      
       if (
         serviceability.status !== 200 ||
         !serviceability.data.available_courier_companies ||
@@ -216,7 +218,7 @@ export class OrdersService {
         to: StockStage.RESERVED,
       }));
       await this.stockMovementsService.createMovements(movements, manager);
-      return { razorpayOrderId: savedOrder.razorpayOrderId, orderId: order.id, firstName: order.billingFirstName, lastName:order.billingLastName, email: order.billingEmailId, contact: order.billingPhoneNumber }
+      return { razorpayOrderId: savedOrder.razorpayOrderId, orderId: order.id, firstName: order.billingFirstName, lastName: order.billingLastName, email: order.billingEmailId, contact: order.billingPhoneNumber }
     });
   }
 
@@ -658,50 +660,50 @@ export class OrdersService {
     }
   }
 
-  async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto, from, to, fromOrderStatus, toOrderStatus,manager: EntityManager): Promise<any> {
+  async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto, from, to, fromOrderStatus, toOrderStatus, manager: EntityManager): Promise<any> {
     const { orderId, movedBy, remarks } = updateOrderStausDto;
 
-      const order = await this.orderRepository.findOne({
-        where: { id: orderId },
-      });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
 
-      if (!order) {
-        throw new NotFoundException('Order not found');
-      }
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
-      if (order.paymentStatus !== PaymentStatus.PAID) {
-        throw new BadRequestException('Order is not paid');
-      }
+    if (order.paymentStatus !== PaymentStatus.PAID) {
+      throw new BadRequestException('Order is not paid');
+    }
 
-      if (order.orderStatus !== fromOrderStatus) {
-        throw new BadRequestException('Order is not ' + fromOrderStatus);
-      }
+    if (order.orderStatus !== fromOrderStatus) {
+      throw new BadRequestException('Order is not ' + fromOrderStatus);
+    }
 
-      order.orderStatus = toOrderStatus;
-      if (toOrderStatus === OrderStatus.DELIVERED) {
-        order.deliveredAt = new Date()
-      }
-      await manager.save(order);
+    order.orderStatus = toOrderStatus;
+    if (toOrderStatus === OrderStatus.DELIVERED) {
+      order.deliveredAt = new Date()
+    }
+    await manager.save(order);
 
-      const orderItems = await manager.find(OrderItem, {
-        where: { order: { id: orderId } },
-      });
+    const orderItems = await manager.find(OrderItem, {
+      where: { order: { id: orderId } },
+    });
 
-      if (!orderItems || orderItems.length === 0) {
-        throw new BadRequestException('No order items found');
-      }
+    if (!orderItems || orderItems.length === 0) {
+      throw new BadRequestException('No order items found');
+    }
 
 
-      const movements = orderItems.map((orderItem) => ({
-        stockId: orderItem.stock.id,
-        orderItemId: orderItem.id,
-        orderId: orderItem.order.id,
-        quantity: orderItem.quantity,
-        from: from,
-        to: to,
-      }));
-      await this.stockMovementsService.createMovements(movements, manager);
-      return { message: 'Order Successfully moved to ' + toOrderStatus }
+    const movements = orderItems.map((orderItem) => ({
+      stockId: orderItem.stock.id,
+      orderItemId: orderItem.id,
+      orderId: orderItem.order.id,
+      quantity: orderItem.quantity,
+      from: from,
+      to: to,
+    }));
+    await this.stockMovementsService.createMovements(movements, manager);
+    return { message: 'Order Successfully moved to ' + toOrderStatus }
   }
 
   async saveOrderDimensions(
@@ -711,12 +713,33 @@ export class OrdersService {
 ) {
   const repo = manager?.getRepository(Order) ?? this.orderRepository;
 
-  await repo.update(orderId, {
+  // Validate dimensions
+  if (
+    dims.length <= 0 ||
+    dims.breadth <= 0 ||
+    dims.height <= 0 ||
+    dims.weight <= 0
+  ) {
+    throw new Error('Invalid dimensions: All values must be greater than 0');
+  }
+
+  // Check if order exists
+  const existing = await repo.findOne({ where: { id: orderId } });
+  if (!existing) {
+    throw new Error(`Order with ID ${orderId} not found`);
+  }
+  
+  // Perform update
+  const result = await repo.save({
+    id: orderId,
     packageLength: dims.length,
     packageBreadth: dims.breadth,
     packageHeight: dims.height,
     packageWeight: dims.weight,
   });
+
+
+  console.log(`✅ Order dimensions saved for orderId ${orderId}`);
 }
 
   async getCustomerOrders(userId: any): Promise<any[]> {
@@ -757,11 +780,11 @@ export class OrdersService {
         orderId: order.id,
         orderStatus: order.orderStatus,
         totalAmount: order.totalAmount,
-        shippingAddress: `${order.shippingFirstName+' '+order.shippingLastName}, ${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingState}, ${order.shippingCountry}, ${order.shippingPincode}, ${order.shippingPhoneNumber}`,
+        shippingAddress: `${order.shippingFirstName + ' ' + order.shippingLastName}, ${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingState}, ${order.shippingCountry}, ${order.shippingPincode}, ${order.shippingPhoneNumber}`,
         billingAddress: `${order.billingFirstName + ' ' + order.billingLastName}, ${order.billingStreetAddress}, ${order.billingCity}, ${order.billingState}, ${order.billingCountry}, ${order.billingPincode}, ${order.billingPhoneNumber}`,
         createdAt: order.createdAt,
         paymentMethod: order.paymentMethod,
-        deliveryCharge: order.deliveryCharge, 
+        deliveryCharge: order.deliveryCharge,
         totalTax: order.totalTax,
         subTotal: order.subTotal,
         itemCount,
@@ -779,23 +802,90 @@ export class OrdersService {
   }
 
   async createShiprocketShipment(orderId: number, manager?: EntityManager): Promise<any> {
-  const repo = manager?.getRepository(Order) ?? this.orderRepository;
+    const repo = manager?.getRepository(Order) ?? this.orderRepository;
 
-  const order = await repo.findOne({
-    where: { id: orderId },
-    relations: ['customer', 'items.productVariant.product', 'items.productVariant.images', 'items.stock'],
+    const order = await repo.findOne({
+      where: { id: orderId },
+      relations: ['customer', 'items.productVariant.product', 'items.productVariant.images', 'items.stock'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    if (order.orderStatus !== OrderStatus.QC_CHECK) {
+      throw new BadRequestException('Order is not packed yet');
+    }
+
+    const shipmentDetails = await this.shiprocketShipmentService.createAdhocOrder(order, manager);
+    return shipmentDetails;
+  }
+
+  async getAvailableCourierForOrder(orderId: number) {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['shipments'],
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    const forwardShipment = order.shipments.find(
+      (shipment) => shipment.type === 'forward'
+    );
+
+    if (!forwardShipment) throw new Error('Forward shipment not found');
+
+    const shipmentId = forwardShipment.shipRocketShipmentId;
+
+    if (!shipmentId) {
+      throw new BadRequestException('Shipment ID is missing');
+    }
+    console.log(shipmentId);
+    
+    const pickupPincode = this.configService.get<string>('SHIPROCKET_PICKUP_PINCODE');
+
+    const payload = {
+      pickup_postcode: pickupPincode,
+      delivery_postcode: order.shippingPincode,
+      cod: 0,
+      weight: order.packageWeight,
+      qc_check: 0,
+    };
+    console.log(payload);
+    
+    return await this.shiprocketShipmentService.checkServiceability(payload);
+
+  }
+
+ async generateAwb(generateAwbDto: GenerateAwbDto) {
+  return await this.dataSource.transaction(async (manager) => {
+    const order = await manager.findOne(Order, {
+      where: { id: generateAwbDto.orderId },
+      relations: ['shipments'],
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    const forwardShipment = order.shipments.find(
+      (shipment) => shipment.type === 'forward',
+    );
+
+    if (!forwardShipment) throw new Error('Forward shipment not found');
+
+    const shipmentId = forwardShipment.shipRocketShipmentId;
+
+    if (!shipmentId) {
+      throw new BadRequestException('Shipment ID is missing');
+    }
+
+    const awbData = await this.shiprocketShipmentService.generateAwb(
+      shipmentId,
+      generateAwbDto.courierCompanyId,
+      manager,
+    );
+
+    return awbData;
   });
-
-  if (!order) {
-    throw new NotFoundException(`Order with ID ${orderId} not found`);
-  }
-
-  if (order.orderStatus !== OrderStatus.QC_CHECK) {
-    throw new BadRequestException('Order is not packed yet');
-  }
-  
-  const shipmentDetails = await this.shiprocketShipmentService.createAdhocOrder(order,manager);
-  return shipmentDetails;
 }
 
 

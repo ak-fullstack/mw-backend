@@ -15,6 +15,10 @@ import { MoveToPickupDto } from './dto/move-to-pickup.dto';
 import { RoleEnum } from 'src/enum/roles.enum';
 import { CalculateItemsDto } from './dto/calculate-items.dto';
 import { DataSource, EntityManager } from 'typeorm';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
+import { RequirePermissions } from 'src/decorators/permission.decorator';
+import { PermissionEnum } from 'src/enum/permissions.enum';
+import { GenerateAwbDto } from './dto/generate-awb.dto';
 
 
 @Controller('orders')
@@ -162,12 +166,26 @@ export class OrdersController {
 
 
       await this.ordersService.createShiprocketShipment(MoveToPickupDto.orderId, manager);
-            console.log('3');
-
       return await this.ordersService.updateOrderStatus(MoveToPickupDto, StockStage.QC_CHECK, StockStage.WAITING_AWB, OrderStatus.QC_CHECK, OrderStatus.WAITING_AWB, manager);
     });
 
   }
+
+   @Post('/generate-awb')
+  async generateAwb(
+    @Body() generateAwbDto: GenerateAwbDto
+  ) {
+    return this.ordersService.generateAwb(generateAwbDto);
+  }
+
+   @Get('get-available-couriers/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
+  async getAvailableCouriersForOrder(@Param('id') orderId: number): Promise<any> {
+    return await this.ordersService.getAvailableCourierForOrder(orderId);
+  }
+
+
 
 
   // @Patch('move-to-courier-pickup')
@@ -242,6 +260,8 @@ export class OrdersController {
     res.setHeader('Content-Type', 'image/png');
     res.send(buffer);
   }
+
+  
 
 
 

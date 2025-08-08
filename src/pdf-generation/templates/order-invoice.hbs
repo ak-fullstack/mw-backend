@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice #{{orderId}}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      margin: 0;
+      padding: 30px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      font-size: 16px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    .total-row td {
+      font-weight: bold;
+    }
+    .right {
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Invoice</h1>
+
+  <div class="section">
+    <h2>Order Info</h2>
+    <p><strong>Order ID:</strong> {{orderId}}</p>
+    <p><strong>Date:</strong> {{now}}</p>
+  </div>
+
+  <div class="section">
+    <h2>Billing Details</h2>
+    <p><strong>Name:</strong> {{billingName}}</p>
+    <p><strong>Address:</strong> {{billingAddress}}</p>
+    <p><strong>Email:</strong> {{billingEmail}}</p>
+    <p><strong>Phone:</strong> {{billingPhone}}</p>
+  </div>
+
+  <div class="section">
+    <h2>Shipping Details</h2>
+    <p><strong>Name:</strong> {{shippingName}}</p>
+    <p><strong>Address:</strong> {{shippingAddress}}</p>
+    <p><strong>Email:</strong> {{shippingEmail}}</p>
+    <p><strong>Phone:</strong> {{shippingPhone}}</p>
+  </div>
+
+  <div class="section">
+    <h2>Items</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Tax</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{@index}}</td>
+          <td>{{name}}</td>
+          <td>{{quantity}}</td>
+          <td>₹{{price}}</td>
+          <td>₹{{tax}}</td>
+          <td>₹{{total}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Summary</h2>
+    <table>
+      <tr>
+        <td class="right">Subtotal:</td>
+        <td class="right">₹{{subTotal}}</td>
+      </tr>
+      <tr>
+        <td class="right">Delivery Charge:</td>
+        <td class="right">₹{{deliveryCharge}}</td>
+      </tr>
+      <tr>
+        <td class="right">Total Tax:</td>
+        <td class="right">₹{{totalTax}}</td>
+      </tr>
+      <tr class="total-row">
+        <td class="right">Total Amount:</td>
+        <td class="right">₹{{totalAmount}}</td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

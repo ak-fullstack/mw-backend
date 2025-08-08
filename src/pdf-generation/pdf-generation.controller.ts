@@ -47,4 +47,14 @@ async generateEodReport(@Body() body: EodReportDto): Promise<StreamableFile> {
     disposition: 'attachment; filename="report.pdf"',
   });
 }
+
+@Post('order-invoice')
+async generateInvoice(@Body() body): Promise<StreamableFile> {
+  const buffer = await this.pdfGenerationService.generateInvoice(body.orderId);
+
+  return new StreamableFile(buffer, {
+    type: 'application/pdf',
+    disposition: 'attachment; filename="report.pdf"',
+  });
+}
 }

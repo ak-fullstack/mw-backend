@@ -5,5 +5,6 @@ import { GoogleCloudStorageController } from './google-cloud-storage.controller'
 @Module({
   controllers: [GoogleCloudStorageController],
   providers: [GoogleCloudStorageService],
+  exports:[GoogleCloudStorageService]
 })
 export class GoogleCloudStorageModule {}

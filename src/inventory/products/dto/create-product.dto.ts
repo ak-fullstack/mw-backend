@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   IsObject,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -33,8 +34,11 @@ export class SubCategoryDto {
 
 export class VariantDto {
   @IsString()
+  @Matches(/^[^\s]+$/, {
+    message: 'SKU must not contain spaces',
+  })
   sku: string;
-
+  
   @IsOptional()
   @IsObject()
   color?: any;

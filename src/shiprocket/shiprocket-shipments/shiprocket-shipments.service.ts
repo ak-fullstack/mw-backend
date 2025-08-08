@@ -8,7 +8,7 @@ import { DateUtil } from 'src/common/utils/dates.util';
 import { Order } from 'src/order/orders/entities/order.entity';
 import { RedisService } from 'src/redis/redis.service';
 import { ShiprocketShipment } from './entities/shiprocket-shipment.entity';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { ShiprocketStatusLogService } from '../shiprocket-status-log/shiprocket-status-log.service';
 
 @Injectable()
@@ -195,24 +195,20 @@ export class ShiprocketShipmentsService {
     // }
 
     try {
-      console.log(payload);
 
       const response = await this.axiosInstance.post('/orders/create/adhoc', payload);
       const data = response.data;
       this.logger.log(`✅ Shiprocket order created: ${JSON.stringify(response.data)}`);
-      console.log(data);
 
-      console.log('1');
 
       const shipment=await manager.getRepository(ShiprocketShipment).save({
         shiprocketOrderId: data.order_id,
         shipRocketShipmentId: data.shipment_id,
         shipmentStatus: data.status,
         order: { id: data.channel_order_id },
+        type: 'forward',
       });
-      console.log('2');
       await this.shiprocketStatusLogService.createShipmentLog({ ...shipment, description: 'Order created in Shiprocket' },manager);
-      console.log('3');
 
 
       return response.data;
@@ -243,11 +239,38 @@ export class ShiprocketShipmentsService {
       weight: payload.weight,
       qc_check: payload.qc_check || 0,
     };
-    console.log(params);
+    
     try {
       const response = await this.axiosInstance.get(`/courier/serviceability/`, {
         params,
       });
+      return response.data;
+    } catch (error) {
+      this.logger.error('❌ Failed to check serviceability', error);
+      throw new BadRequestException('Failed to check serviceability', error);
+    }
+  }
+
+
+  async generateAwb(shipmentId: any, courierCompanyId: any,manager:EntityManager): Promise<any> {
+    const payload = {
+      shipment_id: shipmentId,
+      courier_id: courierCompanyId,
+    }
+
+  
+      try {
+      const response = await this.axiosInstance.post(`/courier/assign/awb`, payload);
+      
+      // const shipment=await manager.getRepository(ShiprocketShipment).save({
+      //   shiprocketOrderId: data.order_id,
+      //   shipRocketShipmentId: data.shipment_id,
+      //   shipmentStatus: data.status,
+      //   order: { id: data.channel_order_id },
+      //   type: 'forward',
+      // });
+      // await this.shiprocketStatusLogService.createShipmentLog({ ...shipment, description: 'Order created in Shiprocket' },manager);
+      
       return response.data;
     } catch (error) {
       this.logger.error('❌ Failed to check serviceability', error);

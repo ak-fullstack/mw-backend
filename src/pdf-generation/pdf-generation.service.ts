@@ -144,12 +144,64 @@ export class PdfGenerationService {
         closureDate: reportDate,
       }
     });
-    
-    if(!closure){
+
+    if (!closure) {
       throw new BadRequestException('Cannot download report for the date without closure');
     }
-    
+
     const data = await this.eodClosureService.generateEodReport(date);
+    const compiledHtml = template(data);
+
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+
+    await page.setContent(compiledHtml, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+    });
+
+    await browser.close();
+    return Buffer.from(pdfBuffer);
+  }
+
+
+  async generateInvoice(orderId: number): Promise<Buffer> {
+
+    const templatePath = path.join(process.cwd(), 'src', 'pdf-generation', 'templates', 'order-invoice.hbs');
+    const html = fs.readFileSync(templatePath, 'utf8');
+    const template = Handlebars.compile(html);
+
+    const order = await this.orderService.findById(orderId);
+
+    if (!order) {
+      throw new BadRequestException('No order Found');
+    }
+    const data = {
+      orderId: order.id,
+      billingName: order.billingFirstName + ' ' + order.billingLastName,
+      billingAddress: order.fullBillingAddress,
+      billingEmail: order.billingEmailId,
+      billingPhone: order.billingPhoneNumber,
+      shippingName: order.shippingFirstName + ' ' + order.shippingLastName,
+      shippingAddress: order.fullShippingAddress,
+      shippingEmail: order.shippingEmailId,
+      shippingPhone: order.shippingPhoneNumber,
+
+      items: order.items.map(item => ({
+        name: item.productVariant.product.name,               // or item.productName / item.title
+        quantity: item.quantity,
+        price: item.subTotal,         // per item price
+        tax: item.totalTaxAmount,
+        total: item.totalAmount
+      })),
+      subTotal: order.subTotal,
+      deliveryCharge: order.deliveryCharge,
+      totalTax: order.totalTax,
+      totalAmount: order.totalAmount,
+    }
+
     const compiledHtml = template(data);
 
     const browser = await puppeteer.launch({ headless: true });
