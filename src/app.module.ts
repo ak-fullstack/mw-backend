@@ -13,7 +13,6 @@ import { InventoryModule } from './inventory/inventory.module';
 import { OrderModule } from './order/order.module';
 import { RazorpayModule } from './razorpay/razorpay.module';
 import { PaymentsModule } from './order/payments/payments.module';
-import { SocketModule } from './sockets/socket.module';
 import { QrCodeModule } from './qr-code/qr-code.module';
 import { PdfGenerationModule } from './pdf-generation/pdf-generation.module';
 import { FirebaseModule } from './firebase/firebase.module';
@@ -22,13 +21,14 @@ import { EodClosureModule } from './eod-closure/eod-closure.module';
 import { OrderSettingsModule } from './settings/order-settings/order-settings.module';
 import { ShiprocketShipmentsModule } from './shiprocket/shiprocket-shipments/shiprocket-shipments.module';
 import { ShiprocketStatusLogModule } from './shiprocket/shiprocket-status-log/shiprocket-status-log.module';
+import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
   imports: [DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule, OrderSettingsModule, ShiprocketShipmentsModule, ShiprocketStatusLogModule],
+    UserModule,AuthModule, RolesModule, GoogleCloudStorageModule, CustomerModule, EmailsModule, InventoryModule, OrderModule,PaymentsModule,RazorpayModule,SocketsModule, QrCodeModule, PdfGenerationModule, FirebaseModule,RedisModule, EodClosureModule, OrderSettingsModule, ShiprocketShipmentsModule, ShiprocketStatusLogModule],
   controllers: [AppController],
   providers: [AppService],
 })

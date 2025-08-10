@@ -7,11 +7,12 @@ import { Payment } from './entities/payment.entity';
 import { Order } from '../orders/entities/order.entity';
 import { WalletModule } from 'src/customer/wallet/wallet.module';
 import { Wallet } from 'src/customer/wallet/entities/wallet.entity';
+import { SocketsModule } from 'src/sockets/sockets.module';
 
 @Module({
   controllers: [PaymentsController],
   providers: [PaymentsService],
-  imports:[TypeOrmModule.forFeature([Payment,Order,Wallet]),WalletModule],
+  imports:[TypeOrmModule.forFeature([Payment,Order,Wallet]),WalletModule,SocketsModule],
     exports: [PaymentsService], // <-- IMPORTANT: PaymentsService must be exported
 
   

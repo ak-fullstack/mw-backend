@@ -9,6 +9,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import {  RequirePermissions } from 'src/decorators/permission.decorator';
 import { RoleEnum } from 'src/enum/roles.enum';
 import { PermissionEnum } from 'src/enum/permissions.enum';
+import { UpdateDiscountDto } from './dto/update-discount-dto';
 
 @Controller('stocks')
 export class StocksController {
@@ -51,6 +52,13 @@ export class StocksController {
   @RequirePermissions(PermissionEnum.UPDATE_STOCK_APPROVAL)
   async toggleDiscount(@Param('id') id: string) {
     return this.stocksService.toggleDiscount(+id);
+  }
+
+   @Patch('updateDiscount')
+   @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.UPDATE_STOCK_DISCOUNT)
+  async updateDiscount(@Body() updateDiscountDto: UpdateDiscountDto) {
+    return this.stocksService.updateDiscountPercent(updateDiscountDto.stockId,updateDiscountDto.discountpercent);
   }
 
 

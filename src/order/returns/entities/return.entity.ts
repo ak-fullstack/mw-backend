@@ -22,18 +22,10 @@ export class Return {
     @JoinColumn({ name: 'orderId' })
     order: Order;
 
-    @Column({ type: 'text', nullable: true })
-    reason: string;
 
     @Column({ type: 'enum', enum: ReturnStatus, default: ReturnStatus.RETURN_REQUESTED })
     returnStatus: ReturnStatus;
 
-    @Column({
-        type: 'enum',
-        enum: ReturnType,
-        default: ReturnType.REPLACEMENT,
-    })
-    returnType: ReturnType;
 
     @OneToMany(() => ReturnItem, item => item.returnRequest, { cascade: false })
     items: ReturnItem[];
@@ -58,8 +50,4 @@ export class Return {
     processedDate: Date;
 
 
-    @OneToMany(() => ReturnImage, (image) => image.return, {
-        cascade: false,
-    })
-    images: ReturnImage[];
 }

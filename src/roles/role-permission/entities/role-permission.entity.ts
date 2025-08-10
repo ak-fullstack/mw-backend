@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, ManyToOne, Column } from 'typeorm';
 import { Role } from 'src/roles/role/entities/role.entity';
+import { PermissionEnum } from 'src/enum/permissions.enum';
 
 
 @Entity()
@@ -11,21 +12,21 @@ export class RolePermission {
   role: Role;  // The role to which this permission belongs
 
   @Column({
-    type: 'varchar',
-    length: 255, // You can set a max length here
+  type: 'enum',
+  enum: PermissionEnum,
   })
-  permission: string;
+  permission: PermissionEnum;
 
   @Column({
-        type: 'timestamp',
-        default: () => 'CURRENT_TIMESTAMP',
-    })
-    createdAt: Date;
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt: Date;
 
-    @Column({
-        type: 'timestamp',
-        default: () => 'CURRENT_TIMESTAMP',
-        onUpdate: 'CURRENT_TIMESTAMP',
-    })
-    updatedAt: Date;
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }

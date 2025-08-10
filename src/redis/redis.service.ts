@@ -42,14 +42,14 @@ export class RedisService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.setToken('1', 'testToken', 'admin');
+    // await this.setToken('1', 'testToken', 'admin');
   }
 
 
   async setToken(
     userId: string,
     token: string,
-    type: 'customer' | 'admin' | 'refresh'
+    type: 'customer' | 'user' | 'refresh'
   ): Promise<void> {
     const ttl = this.configService.get<string>('REDIS_TOKEN_TTL');
     const ttlValue = ttl ? parseInt(ttl, 10) : 3600;
@@ -81,7 +81,7 @@ export class RedisService implements OnModuleInit {
     }
   }
 
-  async getToken(userId: string, type: 'customer' | 'admin' | 'refresh' = 'customer'): Promise<string | null> {
+  async getToken(userId: string, type: 'customer' | 'admin' | 'refresh'): Promise<string | null> {
     return await this.redisClient.get(`session:${type}:${userId}`);
   }
 
@@ -92,5 +92,39 @@ export class RedisService implements OnModuleInit {
   async deleteToken(userId: string, type: 'customer' | 'admin' | 'refresh' = 'customer'): Promise<void> {
     await this.redisClient.del(`session:${type}:${userId}`);
   }
+
+
+  async addSocketClient(userId: string, clientId: string): Promise<void> {
+    const ttl = this.configService.get<string>('REDIS_TOKEN_TTL');
+const ttlValue = ttl ? parseInt(ttl, 10) : 28800;
+
+    const redisKey = `userSockets:${userId}`;
+    const added = await this.redisClient.sadd(redisKey, clientId);
+    await this.redisClient.expire(redisKey, ttlValue);
+
+    if (added) {
+      this.logger.log(`✅ Socket client ${clientId} added for user ${userId} (expires in ${ttlValue}s)`);
+    } else {
+      this.logger.error(`❌ Failed to add socket client ${clientId} for user ${userId}`);
+    }
+  }
+
+  async removeSocketClient(userId: string, clientId: string): Promise<void> {
+  const redisKey = `userSockets:${userId}`;
+  const removed = await this.redisClient.srem(redisKey, clientId);
+
+  if (removed) {
+    this.logger.log(`✅ Socket client ${clientId} removed for user ${userId}`);
+  } else {
+    this.logger.error(`❌ Failed to remove socket client ${clientId} for user ${userId}`);
+  }
+}
+
+async getSocketClients(userId: string): Promise<string[]> {
+  const redisKey = `userSockets:${userId}`;
+  const clients = await this.redisClient.smembers(redisKey);
+  return clients;
+}
+
 }
 

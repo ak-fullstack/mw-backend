@@ -88,7 +88,6 @@ export class ShiprocketShipmentsService {
 
 
     try {
-      console.log(`Logging in to Shiprocket with email: ${email}`);
 
       const bareAxios = axios.create({
         baseURL: baseUrl, // ✅ set base URL

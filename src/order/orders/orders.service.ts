@@ -25,6 +25,7 @@ import { OrderSettingsService } from 'src/settings/order-settings/order-settings
 import { ShiprocketShipmentsService } from 'src/shiprocket/shiprocket-shipments/shiprocket-shipments.service';
 import { ConfigService } from '@nestjs/config';
 import { GenerateAwbDto } from './dto/generate-awb.dto';
+import { SocketsGateway } from 'src/sockets/sockets.gateway';
 
 @Injectable()
 export class OrdersService {
@@ -38,6 +39,7 @@ export class OrdersService {
     private readonly orderSettingsService: OrderSettingsService,
     private readonly shiprocketShipmentService: ShiprocketShipmentsService,
     private readonly returnService: ReturnsService,
+    private readonly socketGateway: SocketsGateway,
 
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -51,7 +53,9 @@ export class OrdersService {
     @InjectRepository(CustomerAddress)
     private readonly customerAddressRepository: Repository<CustomerAddress>,
     private dataSource: DataSource
-  ) { }
+  ) {
+
+  }
 
   async create(createOrderDto: CreateOrderDto, customerId: number): Promise<any> {
 
@@ -100,7 +104,7 @@ export class OrdersService {
       }
       const pickupPincode = this.configService.get<string>('SHIPROCKET_PICKUP_PINCODE');
       const serviceability = await this.shiprocketShipmentService.checkServiceability({ pickup_postcode: pickupPincode, delivery_postcode: shippingAddress.pincode, cod: false, weight: 2, qc_check: 0 });
-      
+
       if (
         serviceability.status !== 200 ||
         !serviceability.data.available_courier_companies ||
@@ -149,6 +153,7 @@ export class OrdersService {
         if (!wallet || wallet.balance <= 0) {
           throw new BadRequestException('Wallet has no balance');
         }
+        order.usedWallet = true;
         finalRazorpayAmount = Number((totalAmount - wallet.balance).toFixed(2));
         if (finalRazorpayAmount <= 0) {
           order.paymentSource = 'wallet';
@@ -184,7 +189,6 @@ export class OrdersService {
       try {
         if (finalRazorpayAmount > 0) {
 
-
           razorPayOrderDetails = await this.razorpayService.createOrder(finalRazorpayAmount);
           order.razorpayOrderId = razorPayOrderDetails.id;
 
@@ -197,7 +201,6 @@ export class OrdersService {
       }
 
       if (order.walletAmountUsed > 0 && order.paymentSource === 'wallet') {
-
         savedOrder = await manager.save(Order, order);
         await this.walletService.debit(customer.id, order.id, WalletTransactionReason.ORDER_PAYMENT, order.walletAmountUsed, manager);
       }
@@ -218,6 +221,9 @@ export class OrdersService {
         to: StockStage.RESERVED,
       }));
       await this.stockMovementsService.createMovements(movements, manager);
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        this.socketGateway.notifyNewOrder(order.id)
+      }
       return { razorpayOrderId: savedOrder.razorpayOrderId, orderId: order.id, firstName: order.billingFirstName, lastName: order.billingLastName, email: order.billingEmailId, contact: order.billingPhoneNumber }
     });
   }
@@ -663,7 +669,7 @@ export class OrdersService {
   async updateOrderStatus(updateOrderStausDto: UpdateOrderStatusDto, from, to, fromOrderStatus, toOrderStatus, manager: EntityManager): Promise<any> {
     const { orderId, movedBy, remarks } = updateOrderStausDto;
 
-    const order = await this.orderRepository.findOne({
+    const order = await manager.findOne(Order, {
       where: { id: orderId },
     });
 
@@ -707,40 +713,40 @@ export class OrdersService {
   }
 
   async saveOrderDimensions(
-  orderId: number,
-  dims: { length: number; breadth: number; height: number; weight: number },
-  manager?: EntityManager
-) {
-  const repo = manager?.getRepository(Order) ?? this.orderRepository;
-
-  // Validate dimensions
-  if (
-    dims.length <= 0 ||
-    dims.breadth <= 0 ||
-    dims.height <= 0 ||
-    dims.weight <= 0
+    orderId: number,
+    dims: { length: number; breadth: number; height: number; weight: number },
+    manager?: EntityManager
   ) {
-    throw new Error('Invalid dimensions: All values must be greater than 0');
+    const repo = manager?.getRepository(Order) ?? this.orderRepository;
+
+    // Validate dimensions
+    if (
+      dims.length <= 0 ||
+      dims.breadth <= 0 ||
+      dims.height <= 0 ||
+      dims.weight <= 0
+    ) {
+      throw new Error('Invalid dimensions: All values must be greater than 0');
+    }
+
+    // Check if order exists
+    const existing = await repo.findOne({ where: { id: orderId } });
+    if (!existing) {
+      throw new Error(`Order with ID ${orderId} not found`);
+    }
+
+    // Perform update
+    const result = await repo.save({
+      id: orderId,
+      packageLength: dims.length,
+      packageBreadth: dims.breadth,
+      packageHeight: dims.height,
+      packageWeight: dims.weight,
+    });
+
+
+    console.log(`✅ Order dimensions saved for orderId ${orderId}`);
   }
-
-  // Check if order exists
-  const existing = await repo.findOne({ where: { id: orderId } });
-  if (!existing) {
-    throw new Error(`Order with ID ${orderId} not found`);
-  }
-  
-  // Perform update
-  const result = await repo.save({
-    id: orderId,
-    packageLength: dims.length,
-    packageBreadth: dims.breadth,
-    packageHeight: dims.height,
-    packageWeight: dims.weight,
-  });
-
-
-  console.log(`✅ Order dimensions saved for orderId ${orderId}`);
-}
 
   async getCustomerOrders(userId: any): Promise<any[]> {
     const afterPendingStatuses = Object.keys(OrderStatusPriority)
@@ -771,10 +777,10 @@ export class OrdersService {
 
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
       const isDelivered = order.orderStatus === OrderStatus.DELIVERED;
-      const daysSinceOrder = (new Date().getTime() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceDelivered = (new Date().getTime() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
       const returnDays = settings.return_days ?? 10; // fallback to 10 if not set
-      const returnAvailable = isDelivered && daysSinceOrder <= returnDays;
-
+      const returnAvailable = isDelivered && daysSinceDelivered <= returnDays;
+ 
 
       return {
         orderId: order.id,
@@ -841,7 +847,7 @@ export class OrdersService {
       throw new BadRequestException('Shipment ID is missing');
     }
     console.log(shipmentId);
-    
+
     const pickupPincode = this.configService.get<string>('SHIPROCKET_PICKUP_PINCODE');
 
     const payload = {
@@ -851,42 +857,41 @@ export class OrdersService {
       weight: order.packageWeight,
       qc_check: 0,
     };
-    console.log(payload);
-    
+
     return await this.shiprocketShipmentService.checkServiceability(payload);
 
   }
 
- async generateAwb(generateAwbDto: GenerateAwbDto) {
-  return await this.dataSource.transaction(async (manager) => {
-    const order = await manager.findOne(Order, {
-      where: { id: generateAwbDto.orderId },
-      relations: ['shipments'],
+  async generateAwb(generateAwbDto: GenerateAwbDto) {
+    return await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: generateAwbDto.orderId },
+        relations: ['shipments'],
+      });
+
+      if (!order) throw new Error('Order not found');
+
+      const forwardShipment = order.shipments.find(
+        (shipment) => shipment.type === 'forward',
+      );
+
+      if (!forwardShipment) throw new Error('Forward shipment not found');
+
+      const shipmentId = forwardShipment.shipRocketShipmentId;
+
+      if (!shipmentId) {
+        throw new BadRequestException('Shipment ID is missing');
+      }
+
+      const awbData = await this.shiprocketShipmentService.generateAwb(
+        shipmentId,
+        generateAwbDto.courierCompanyId,
+        manager,
+      );
+
+      return awbData;
     });
-
-    if (!order) throw new Error('Order not found');
-
-    const forwardShipment = order.shipments.find(
-      (shipment) => shipment.type === 'forward',
-    );
-
-    if (!forwardShipment) throw new Error('Forward shipment not found');
-
-    const shipmentId = forwardShipment.shipRocketShipmentId;
-
-    if (!shipmentId) {
-      throw new BadRequestException('Shipment ID is missing');
-    }
-
-    const awbData = await this.shiprocketShipmentService.generateAwb(
-      shipmentId,
-      generateAwbDto.courierCompanyId,
-      manager,
-    );
-
-    return awbData;
-  });
-}
+  }
 
 
 }

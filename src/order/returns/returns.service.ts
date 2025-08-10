@@ -128,15 +128,12 @@ export class ReturnsService {
       await manager.save(Order, order)
       const returnRequest = manager.create(Return, {
         order,
-        reason: createReturnDto.reason,
         status: 'PENDING',
       });
 
       const savedReturn = await manager.save(Return, returnRequest);
 
       try {
-
-        const returnItemsToSave: ReturnItem[] = [];
 
         for (const incomingItem of createReturnDto.items) {
           const fullItem = orderItemMap.get(incomingItem.orderItemId);
@@ -170,29 +167,29 @@ export class ReturnsService {
             totalAmount: calculatedData.totalAmount,
             status: ReturnItemStatus.RETURN_REQUESTED,
           });
-          returnItemsToSave.push(returnItem);
+          const savedReturnItem = await manager.save(ReturnItem, returnItem);
+
+          if (!incomingItem.images?.length) {
+            throw new BadRequestException('Every item should have atleast one image')
+
+          }
+
+          const returnImages = incomingItem.images.map((imageUrl) =>
+            manager.create(ReturnImage, {
+              imageUrl,
+              returnItem: savedReturnItem,
+            }),
+          );
+          await manager.save(ReturnImage, returnImages);
+
+
 
         }
-        await manager.save(ReturnItem, returnItemsToSave);
 
       } catch (error) {
         console.error('Error while saving return items:', error);
         throw new InternalServerErrorException('Failed to save return items. Please try again.');
       }
-
-
-      if (createReturnDto.images && createReturnDto.images.length > 0) {
-        const returnImages = createReturnDto.images.map((imageUrl) =>
-          manager.create(ReturnImage, {
-            imageUrl,
-            return: savedReturn,
-          }),
-        );
-
-        await manager.save(ReturnImage, returnImages);
-      }
-
-
       return { message: 'Return request Successfully created' }
     });
 
@@ -225,7 +222,6 @@ export class ReturnsService {
   async getAllReturns(status?: ReturnStatus) {
     const where: any = {};
     if (status) where.returnStatus = status;
-    console.log(status);
 
 
     const returnRequests = await this.returnRepository.find({
@@ -281,7 +277,7 @@ export class ReturnsService {
     const result = await this.returnRepository.findOne({
       where: { id },
       relations: [
-        'images',
+        'items.images',
         'items.orderItem.productVariant.product',
         'items.orderItem.productVariant.images',
         'items.orderItem.productVariant.size',
@@ -425,12 +421,12 @@ export class ReturnsService {
                 discountAmount: calculatedData.discountAmount,
               });
               console.log(newItem);
-              
+
               returnRequest.items.push(newItem);
             }
             else {
               originalItem.status = ReturnItemStatus.WAITING_APPROVAL;
-              originalItem.itemCondition=incomingItem.itemCondition
+              originalItem.itemCondition = incomingItem.itemCondition
             }
 
           }
@@ -479,9 +475,9 @@ export class ReturnsService {
         orderId: item.orderItem.order.id,
         quantity: item.quantity,
         from: StockStage.RETURNED,
-        to:item.itemCondition === ReturnItemCondition.GOOD
-            ? StockStage.AVAILABLE
-            : StockStage.DAMAGED,
+        to: item.itemCondition === ReturnItemCondition.GOOD
+          ? StockStage.AVAILABLE
+          : StockStage.DAMAGED,
       }));
 
       await this.stockMovementsService.createMovements(movements, manager);

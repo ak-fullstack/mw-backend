@@ -17,6 +17,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { WalletService } from 'src/customer/wallet/wallet.service';
 import { PermissionEnum } from 'src/enum/permissions.enum';
 import { getMenuForUser } from 'src/common/utils/menu.util';
+import { RedisService } from 'src/redis/redis.service';
 
 
 
@@ -36,6 +37,7 @@ export class AuthService {
     private emailService: EmailsService,
     private customerService: CustomerService,
     private walletService:WalletService,
+    private redisService : RedisService,
     private otpService: OtpService,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
@@ -290,6 +292,7 @@ export class AuthService {
   }
 
 
+
   async validateCustomer(email: string, password: string): Promise<any> {
     const customer = await this.customerService.findByCustomerEmail(email);
 
@@ -325,6 +328,8 @@ export class AuthService {
 
     const access_token = this.jwtService.sign(payload);
 
+    await this.redisService.setToken(customer.id,access_token,'customer');
+    
     // Set HTTP-only cookie
     res.cookie('access_token', access_token, {
       httpOnly: true,

@@ -93,10 +93,9 @@ async createMovements(
         grouped[stockId].stages[stage] = quantity;
       }
 
-      // 2. Load stocks with productVariant and product
       const stocks = await this.stockRepo.find({
         where: { id: In([...stockIds]) },
-        relations: ['productVariant', 'productVariant.product'],
+        relations: ['productVariant', 'productVariant.product','productVariant.size', 'productVariant.color'],
       });
 
       // 3. Enrich the result

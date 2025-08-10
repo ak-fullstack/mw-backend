@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from "class-validator";
 
 class ReturnItemDto {
   @IsInt()
@@ -12,23 +12,20 @@ class ReturnItemDto {
   @IsString()
   @IsNotEmpty()
   reason: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(5)
+  images: string[]; // now required
 }
 
 export class CreateReturnDto {
   @IsInt()
   orderId: number;
 
-  @IsString()
-  @IsNotEmpty()
-  reason: string;
-
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ReturnItemDto)
   items: ReturnItemDto[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
 }

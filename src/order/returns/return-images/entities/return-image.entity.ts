@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Return } from '../../entities/return.entity';
+import { ReturnItem } from 'src/order/return-items/entities/return-item.entity';
 
 @Entity()
 export class ReturnImage {
@@ -9,8 +10,8 @@ export class ReturnImage {
   @Column()
   imageUrl: string;
 
-  @ManyToOne(() => Return, (returnEntity) => returnEntity.images, {
+  @ManyToOne(() => ReturnItem, (returnItem) => returnItem.images, {
     onDelete: 'CASCADE',
   })
-  return: Return;
+  returnItem: ReturnItem;
 }

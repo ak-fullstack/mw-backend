@@ -8,13 +8,15 @@ import { OrderStatus } from 'src/enum/order-status.enum';
 import { Wallet } from 'src/customer/wallet/entities/wallet.entity';
 import { WalletService } from 'src/customer/wallet/wallet.service';
 import { WalletTransactionReason } from 'src/customer/wallet-transaction/entities/wallet-transaction.entity';
+import { SocketsGateway } from 'src/sockets/sockets.gateway';
 
 @Injectable()
 export class PaymentsService {
 
   constructor(
     private readonly walletService: WalletService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly socketGateway: SocketsGateway
 
   ) {
 
@@ -81,6 +83,9 @@ export class PaymentsService {
         payment.status = payload.payload.payment.entity.status;
       }
       await paymentRepository.save(payment);
+       if (order.paymentStatus === PaymentStatus.PAID) {
+        this.socketGateway.notifyNewOrder(order.id);
+      }
     });
 
   }
@@ -97,7 +102,7 @@ export class PaymentsService {
       const orderRepository = manager.getRepository(Order);
       const paymentRepository = manager.getRepository(Payment);
 
-      
+
 
       const order = await orderRepository.findOne({ where: { razorpayOrderId }, relations: ['customer'] });
       if (!order) throw new NotFoundException('Order not found.');
@@ -135,13 +140,13 @@ export class PaymentsService {
       } else {
         order.paymentStatus = PaymentStatus.PENDING;
       }
-      
-try {
-  await orderRepository.save(order);
-} catch (error) {
-  console.error('Error while saving order:', error);
-  throw new InternalServerErrorException('Failed to save order');
-}            console.log('asdad');
+
+      try {
+        await orderRepository.save(order);
+      } catch (error) {
+        console.error('Error while saving order:', error);
+        throw new InternalServerErrorException('Failed to save order');
+      }
 
       let payment = await paymentRepository.findOne({ where: { razorpayPaymentId } });
       if (!payment) {
@@ -159,6 +164,9 @@ try {
 
       await paymentRepository.save(payment);
 
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        this.socketGateway.notifyNewOrder(order.id);
+      }
       return { message: `Order and payment updated with status: ${status}` };
     });
   }

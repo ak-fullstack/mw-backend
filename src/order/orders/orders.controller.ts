@@ -45,6 +45,8 @@ export class OrdersController {
 
 
   @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getAllOrders(
     @Query('id') id?: string,
     @Query('razorpayOrderId') razorpayOrderId?: string,
@@ -68,6 +70,8 @@ export class OrdersController {
   }
 
   @Get('order-report')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getOrderReport(
     @Query('paymentStatus') paymentStatus?: string,
     @Query('startDate') startDate?: string,
@@ -90,6 +94,8 @@ export class OrdersController {
   }
 
   @Get('reception-orders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getReceptionOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
     return this.ordersService.findOrdersByOrderStatus({
       ...query,
@@ -101,6 +107,8 @@ export class OrdersController {
   }
 
   @Get('qc-orders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getPickupOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
     return this.ordersService.findOrdersByOrderStatus({
       ...query,
@@ -111,7 +119,9 @@ export class OrdersController {
     });
   }
 
-   @Get('get-awb-orders')
+  @Get('get-awb-orders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getAwbOrdersOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
     return this.ordersService.findOrdersByOrderStatus({
       ...query,
@@ -123,6 +133,8 @@ export class OrdersController {
   }
 
   @Get('shipped-orders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getShippedOrders(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
     return this.ordersService.findOrdersByOrderStatus({
       ...query,
@@ -134,6 +146,8 @@ export class OrdersController {
   }
 
   @Get('packed-orders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   getPackedOrder(@Query() query: FindReceptionOrdersQueryDto): Promise<any> {
     return this.ordersService.findOrdersByOrderStatus({
       ...query,
@@ -156,7 +170,7 @@ export class OrdersController {
   async moveToWaybillGeneration(@Body() MoveToPickupDto: MoveToPickupDto) {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
 
-      
+
       await this.ordersService.saveOrderDimensions(MoveToPickupDto.orderId, {
         length: MoveToPickupDto.length,
         breadth: MoveToPickupDto.breadth,
@@ -164,21 +178,20 @@ export class OrdersController {
         weight: MoveToPickupDto.weight,
       }, manager);
 
-
       await this.ordersService.createShiprocketShipment(MoveToPickupDto.orderId, manager);
       return await this.ordersService.updateOrderStatus(MoveToPickupDto, StockStage.QC_CHECK, StockStage.WAITING_AWB, OrderStatus.QC_CHECK, OrderStatus.WAITING_AWB, manager);
     });
 
   }
 
-   @Post('/generate-awb')
+  @Post('/generate-awb')
   async generateAwb(
     @Body() generateAwbDto: GenerateAwbDto
   ) {
     return this.ordersService.generateAwb(generateAwbDto);
   }
 
-   @Get('get-available-couriers/:id')
+  @Get('get-available-couriers/:id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(PermissionEnum.READ_ORDER)
   async getAvailableCouriersForOrder(@Param('id') orderId: number): Promise<any> {
@@ -226,6 +239,7 @@ export class OrdersController {
 
   @Get('success/:orderId')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.CUSTOMER)
   async getOrderSuccess(
     @Param('orderId') orderId: string,
     @Req() req
@@ -255,13 +269,15 @@ export class OrdersController {
 
 
   @Post('generate-qr')
+    @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PermissionEnum.READ_ORDER)
   async createQr(@Body('text') text: string, @Res() res: Response) {
     const buffer = await this.qrCodeService.generateQrWithText(text.toString());
     res.setHeader('Content-Type', 'image/png');
     res.send(buffer);
   }
 
-  
+
 
 
 

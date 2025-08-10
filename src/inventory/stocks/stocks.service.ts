@@ -270,4 +270,14 @@ export class StocksService {
     stock.applyDiscount = !stock.applyDiscount; // Toggle the onSale status
     return this.stockRepository.save(stock);
   }
+
+  async updateDiscountPercent(id: number, discount: number) {
+    const stock = await this.stockRepository.findOne({ where: { id } });
+    if (!stock) {
+      throw new NotFoundException(`Stock with ID ${id} not found`);
+    }
+
+    stock.discount = discount;
+    return await this.stockRepository.save(stock);
+  }
 }

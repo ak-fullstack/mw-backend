@@ -6,6 +6,7 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { RequirePermissions } from 'src/decorators/permission.decorator';
 import { PermissionEnum } from 'src/enum/permissions.enum';
+import { PermissionsGuard } from 'src/guards/permissions.guard';
 
 @Controller('order-settings')
 export class OrderSettingsController {
@@ -14,7 +15,7 @@ export class OrderSettingsController {
 
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(PermissionEnum.READ_SETTINGS)
   async getSettings() {
     return await this.orderSettingsService.getSettings();

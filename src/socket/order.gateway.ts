@@ -10,7 +10,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable } from '@nestjs/common';
-import { log } from 'console';
 import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
@@ -25,6 +24,7 @@ import { ConfigService } from '@nestjs/config';
 export class OrderGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
 
   constructor(private readonly jwtService: JwtService, private configService: ConfigService) { }
 
