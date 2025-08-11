@@ -1,9 +1,9 @@
 import { IsString, IsEmail, IsOptional, IsEnum, IsBoolean, IsPhoneNumber, Length, IsNotEmpty, IsUrl, Matches } from 'class-validator';
-import { State } from 'src/enum/states.enum'; 
-import { UserStatus } from 'src/enum/user-staus.enum'; 
+import { State } from 'src/enum/states.enum';
+import { UserStatus } from 'src/enum/user-staus.enum';
 
 export class CreateUserDto {
-  
+
   // First Name
   @IsString()
   @Length(1, 50)
@@ -23,10 +23,10 @@ export class CreateUserDto {
   email: string;
 
   // Phone (Optional, with a max length constraint)
-    @IsString()
-    @IsNotEmpty()
-    @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
-    phone: string;
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
+  phone: string;
 
   // Role ID (The role should exist in the database already)
   @IsNotEmpty()
@@ -58,9 +58,12 @@ export class CreateUserDto {
   pincode: string;
 
   // Profile Image URL (Optional, for the image uploaded URL)
-  @IsOptional()
-  @IsUrl()
-  @Length(1, 255)
-  profileImageUrl: string;
+  // @IsOptional()
+  // @IsUrl()
+  // @Length(1, 255)
+  // profileImageUrl: string;
 
+  @IsOptional()
+  @Length(1, 255)
+  profileImageUrl?: string;
 }
